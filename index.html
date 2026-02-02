@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Christopher Ing - Molecular Field Notes</title>
+    <meta
+      name="description"
+      content="Christopher Ing - a creative molecular homepage built with MolViewStories."
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap"
+    />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <main class="page">
+      <header class="intro">
+        <p class="eyebrow">Christopher Ing</p>
+        <h1>Molecular Field Notes</h1>
+        <p class="lead">
+          A living protein you can explore. Hover the glowing labels to uncover
+          the stories, values, and work that shaped my path.
+        </p>
+        <div class="tags">
+          <span>Scientist</span>
+          <span>Builder</span>
+          <span>Storyteller</span>
+        </div>
+        <div class="links">
+          <a href="#" aria-label="Email Christopher">Email</a>
+          <a href="#" aria-label="Christopher on GitHub">GitHub</a>
+          <a href="#" aria-label="Christopher on LinkedIn">LinkedIn</a>
+        </div>
+        <p class="note">
+          Edit the floating panel copy in <span>story/annotations.cif</span>.
+        </p>
+      </header>
+
+      <section class="viewer-panel">
+        <div class="viewer-frame">
+          <iframe
+            title="Christopher Ing protein story"
+            src="story/viewer.html"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <div class="legend">
+          <button
+            class="legend-item"
+            type="button"
+            data-snapshot="origin"
+            style="--accent: #ef6f59"
+          >
+            Origin
+          </button>
+          <button
+            class="legend-item"
+            type="button"
+            data-snapshot="research"
+            style="--accent: #f3b64e"
+          >
+            Research
+          </button>
+          <button
+            class="legend-item"
+            type="button"
+            data-snapshot="build"
+            style="--accent: #35a3a3"
+          >
+            Build
+          </button>
+          <button
+            class="legend-item"
+            type="button"
+            data-snapshot="community"
+            style="--accent: #2f7dd1"
+          >
+            Community
+          </button>
+          <button
+            class="legend-item"
+            type="button"
+            data-snapshot="now"
+            style="--accent: #6a8f5b"
+          >
+            Now
+          </button>
+        </div>
+        <p class="footer">
+          Structure: PDB 1CBS - Retinoic Acid Binding Protein II
+        </p>
+      </section>
+    </main>
+
+    <script>
+      const viewerFrame = document.querySelector(".viewer-frame iframe");
+      const legendButtons = document.querySelectorAll(".legend-item[data-snapshot]");
+
+      const setActive = (button) => {
+        legendButtons.forEach((item) => {
+          const isActive = item === button;
+          item.classList.toggle("is-active", isActive);
+          item.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+      };
+
+      legendButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", "false");
+        button.addEventListener("click", () => {
+          const snapshotKey = button.dataset.snapshot;
+          const targetOrigin =
+            window.location.origin === "null" ? "*" : window.location.origin;
+
+          viewerFrame?.contentWindow?.postMessage(
+            { type: "apply-snapshot", key: snapshotKey },
+            targetOrigin
+          );
+
+          setActive(button);
+        });
+      });
+    </script>
+  </body>
+</html>
