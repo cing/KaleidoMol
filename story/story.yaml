@@ -1,0 +1,24 @@
+title: "Christopher Ing - Molecular Field Notes"
+author_note: "Interactive protein story for cing.net"
+
+# Global story settings
+settings:
+  autoPlay: false
+  loopStory: false
+  showControls: false
+  backgroundColor: "#f5efe7"
+
+# Scene definitions - reference folders to load from scenes/ directory
+scenes:
+  - folder: scene1
+  - folder: origin
+  - folder: research
+  - folder: build
+  - folder: community
+  - folder: now
+
+# Story-level assets that can be referenced by scenes
+assets:
+  commonStructures: []
+  images: []
+  other: []

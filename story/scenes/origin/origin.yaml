@@ -1,0 +1,4 @@
+header: "Origin"
+key: "origin"
+linger_duration_ms: 6000
+transition_duration_ms: 800
