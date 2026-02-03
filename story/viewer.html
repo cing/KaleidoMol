@@ -88,6 +88,17 @@
         [class*="msp-viewport-top"] {
             display: none !important;
         }
+
+        #axis-cover {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 120px;
+            height: 120px;
+            background: #f5efe7;
+            pointer-events: none;
+            z-index: 2;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/molstar@5.5.0/build/mvs-stories/mvs-stories.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/molstar@5.5.0/build/mvs-stories/mvs-stories.css" />
@@ -95,6 +106,7 @@
 <body>
     <div id="viewer">
         <mvs-stories-viewer></mvs-stories-viewer>
+        <div id="axis-cover" aria-hidden="true"></div>
     </div>
     <div id="controls">
         <mvs-stories-snapshot-markdown style="flex-grow: 1;"></ mvs-stories-snapshot-markdown>
@@ -109,47 +121,168 @@
 
     <script>
         
-        var mvsData = {"kind":"multiple","metadata":{"title":"Christopher Ing - Molecular Field Notes","timestamp":"2026-02-02T06:11:28.511Z","version":"1"},"snapshots":[{"root":{"kind":"root","children":[{"kind":"canvas","params":{"background_color":"#f5efe7"},"custom":{"molstar_postprocessing":{"enable_ssao":true,"ssao_params":{"samples":32,"radius":5,"bias":1,"blurKernelSize":11,"blurDepthBias":0.5,"resolutionScale":1,"color":"0x000000","transparentThreshold":0.4}}}},{"kind":"download","params":{"url":"https://www.ebi.ac.uk/pdbe/entry-files/download/1cbs.bcif"},"children":[{"kind":"parse","params":{"format":"bcif"},"children":[{"kind":"structure","params":{"type":"model"},"children":[{"kind":"component","params":{"selector":"polymer"},"children":[{"kind":"representation","params":{"type":"surface"},"children":[{"kind":"color","params":{"color":"#4d6b73"}},{"kind":"color_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"color","schema":"residue_range"}}]},{"kind":"focus","params":{"direction":[1,0.6,1.2],"up":[0,1,0],"radius_factor":1.6,"radius_extent":6}}]},{"kind":"label_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"label","schema":"residue_range"}},{"kind":"tooltip_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"tooltip","schema":"residue_range"}},{"kind":"component","params":{"selector":"ligand"},"children":[{"kind":"label","params":{"text":"Retinoic Acid"}},{"kind":"representation","params":{"type":"ball_and_stick"},"children":[{"kind":"color","params":{"color":"#d07a37"}}]}]}]}]}]}]},"metadata":{"key":"intro","title":"Christopher Ing","description":"# Molecular Autobiography\n\nHover or tap the floating labels on the protein to reveal data panels.\nUse the Origin, Research, Build, Community, and Now chips below the viewer to jump the camera to each annotation.\n\n**Tip:** Edit `story/annotations.cif` to change the labels and panel text.\n","linger_duration_ms":12000,"transition_duration_ms":800}},{"root":{"kind":"root","children":[{"kind":"canvas","params":{"background_color":"#f5efe7"},"custom":{"molstar_postprocessing":{"enable_ssao":true,"ssao_params":{"samples":32,"radius":5,"bias":1,"blurKernelSize":11,"blurDepthBias":0.5,"resolutionScale":1,"color":"0x000000","transparentThreshold":0.4}}}},{"kind":"download","params":{"url":"https://www.ebi.ac.uk/pdbe/entry-files/download/1cbs.bcif"},"children":[{"kind":"parse","params":{"format":"bcif"},"children":[{"kind":"structure","params":{"type":"model"},"children":[{"kind":"component","params":{"selector":"polymer"},"children":[{"kind":"representation","params":{"type":"surface"},"children":[{"kind":"color","params":{"color":"#4d6b73"}},{"kind":"color_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"color","schema":"residue_range"}}]}]},{"kind":"label_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"label","schema":"residue_range"}},{"kind":"tooltip_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"tooltip","schema":"residue_range"}},{"kind":"component","params":{"selector":"ligand"},"children":[{"kind":"label","params":{"text":"Retinoic Acid"}},{"kind":"representation","params":{"type":"ball_and_stick"},"children":[{"kind":"color","params":{"color":"#d07a37"}}]}]},{"kind":"component","params":{"selector":{"label_asym_id":"A","beg_label_seq_id":12,"end_label_seq_id":12}},"children":[{"kind":"focus","params":{"direction":[1.2,0.4,0.8],"up":[0,1,0],"radius_factor":3,"radius_extent":4}}]}]}]}]}]},"metadata":{"key":"origin","title":"Origin","description":"# Origin\n\nAdd your origin story: where you started and what pulled you toward science, code, or design.\n","linger_duration_ms":6000,"transition_duration_ms":800}},{"root":{"kind":"root","children":[{"kind":"canvas","params":{"background_color":"#f5efe7"},"custom":{"molstar_postprocessing":{"enable_ssao":true,"ssao_params":{"samples":32,"radius":5,"bias":1,"blurKernelSize":11,"blurDepthBias":0.5,"resolutionScale":1,"color":"0x000000","transparentThreshold":0.4}}}},{"kind":"download","params":{"url":"https://www.ebi.ac.uk/pdbe/entry-files/download/1cbs.bcif"},"children":[{"kind":"parse","params":{"format":"bcif"},"children":[{"kind":"structure","params":{"type":"model"},"children":[{"kind":"component","params":{"selector":"polymer"},"children":[{"kind":"representation","params":{"type":"surface"},"children":[{"kind":"color","params":{"color":"#4d6b73"}},{"kind":"color_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"color","schema":"residue_range"}}]}]},{"kind":"label_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"label","schema":"residue_range"}},{"kind":"tooltip_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"tooltip","schema":"residue_range"}},{"kind":"component","params":{"selector":"ligand"},"children":[{"kind":"label","params":{"text":"Retinoic Acid"}},{"kind":"representation","params":{"type":"ball_and_stick"},"children":[{"kind":"color","params":{"color":"#d07a37"}}]}]},{"kind":"component","params":{"selector":{"label_asym_id":"A","beg_label_seq_id":28,"end_label_seq_id":28}},"children":[{"kind":"focus","params":{"direction":[-1,0.5,1.2],"up":[0,1,0],"radius_factor":3,"radius_extent":4}}]}]}]}]}]},"metadata":{"key":"research","title":"Research","description":"# Research\n\nAdd your research focus: the questions, methods, or systems you explore.\n","linger_duration_ms":6000,"transition_duration_ms":800}},{"root":{"kind":"root","children":[{"kind":"canvas","params":{"background_color":"#f5efe7"},"custom":{"molstar_postprocessing":{"enable_ssao":true,"ssao_params":{"samples":32,"radius":5,"bias":1,"blurKernelSize":11,"blurDepthBias":0.5,"resolutionScale":1,"color":"0x000000","transparentThreshold":0.4}}}},{"kind":"download","params":{"url":"https://www.ebi.ac.uk/pdbe/entry-files/download/1cbs.bcif"},"children":[{"kind":"parse","params":{"format":"bcif"},"children":[{"kind":"structure","params":{"type":"model"},"children":[{"kind":"component","params":{"selector":"polymer"},"children":[{"kind":"representation","params":{"type":"surface"},"children":[{"kind":"color","params":{"color":"#4d6b73"}},{"kind":"color_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"color","schema":"residue_range"}}]}]},{"kind":"label_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"label","schema":"residue_range"}},{"kind":"tooltip_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"tooltip","schema":"residue_range"}},{"kind":"component","params":{"selector":"ligand"},"children":[{"kind":"label","params":{"text":"Retinoic Acid"}},{"kind":"representation","params":{"type":"ball_and_stick"},"children":[{"kind":"color","params":{"color":"#d07a37"}}]}]},{"kind":"component","params":{"selector":{"label_asym_id":"A","beg_label_seq_id":55,"end_label_seq_id":55}},"children":[{"kind":"focus","params":{"direction":[0.3,1.1,-1],"up":[0,1,0],"radius_factor":3,"radius_extent":4}}]}]}]}]}]},"metadata":{"key":"build","title":"Build","description":"# Build\n\nAdd your builder mindset: tools, products, or open-source work you love shipping.\n","linger_duration_ms":6000,"transition_duration_ms":800}},{"root":{"kind":"root","children":[{"kind":"canvas","params":{"background_color":"#f5efe7"},"custom":{"molstar_postprocessing":{"enable_ssao":true,"ssao_params":{"samples":32,"radius":5,"bias":1,"blurKernelSize":11,"blurDepthBias":0.5,"resolutionScale":1,"color":"0x000000","transparentThreshold":0.4}}}},{"kind":"download","params":{"url":"https://www.ebi.ac.uk/pdbe/entry-files/download/1cbs.bcif"},"children":[{"kind":"parse","params":{"format":"bcif"},"children":[{"kind":"structure","params":{"type":"model"},"children":[{"kind":"component","params":{"selector":"polymer"},"children":[{"kind":"representation","params":{"type":"surface"},"children":[{"kind":"color","params":{"color":"#4d6b73"}},{"kind":"color_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"color","schema":"residue_range"}}]}]},{"kind":"label_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"label","schema":"residue_range"}},{"kind":"tooltip_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"tooltip","schema":"residue_range"}},{"kind":"component","params":{"selector":"ligand"},"children":[{"kind":"label","params":{"text":"Retinoic Acid"}},{"kind":"representation","params":{"type":"ball_and_stick"},"children":[{"kind":"color","params":{"color":"#d07a37"}}]}]},{"kind":"component","params":{"selector":{"label_asym_id":"A","beg_label_seq_id":88,"end_label_seq_id":88}},"children":[{"kind":"focus","params":{"direction":[-0.9,1,-0.2],"up":[0,1,0],"radius_factor":3,"radius_extent":4}}]}]}]}]}]},"metadata":{"key":"community","title":"Community","description":"# Community\n\nAdd how you teach, mentor, or collaborate with teams and communities.\n","linger_duration_ms":6000,"transition_duration_ms":800}},{"root":{"kind":"root","children":[{"kind":"canvas","params":{"background_color":"#f5efe7"},"custom":{"molstar_postprocessing":{"enable_ssao":true,"ssao_params":{"samples":32,"radius":5,"bias":1,"blurKernelSize":11,"blurDepthBias":0.5,"resolutionScale":1,"color":"0x000000","transparentThreshold":0.4}}}},{"kind":"download","params":{"url":"https://www.ebi.ac.uk/pdbe/entry-files/download/1cbs.bcif"},"children":[{"kind":"parse","params":{"format":"bcif"},"children":[{"kind":"structure","params":{"type":"model"},"children":[{"kind":"component","params":{"selector":"polymer"},"children":[{"kind":"representation","params":{"type":"surface"},"children":[{"kind":"color","params":{"color":"#4d6b73"}},{"kind":"color_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"color","schema":"residue_range"}}]}]},{"kind":"label_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"label","schema":"residue_range"}},{"kind":"tooltip_from_uri","params":{"uri":"./annotations.cif","format":"cif","block_header":"cing_annotations","category_name":"annotations","field_name":"tooltip","schema":"residue_range"}},{"kind":"component","params":{"selector":"ligand"},"children":[{"kind":"label","params":{"text":"Retinoic Acid"}},{"kind":"representation","params":{"type":"ball_and_stick"},"children":[{"kind":"color","params":{"color":"#d07a37"}}]}]},{"kind":"component","params":{"selector":{"label_asym_id":"A","beg_label_seq_id":120,"end_label_seq_id":120}},"children":[{"kind":"focus","params":{"direction":[0.8,-0.4,-1.2],"up":[0,1,0],"radius_factor":3,"radius_extent":4}}]}]}]}]}]},"metadata":{"key":"now","title":"Now","description":"# Now\n\nAdd what you are working on now and how to reach you.\n","linger_duration_ms":6000,"transition_duration_ms":800}}]};
+        const buildMvsData = (pdbId, representationType) => ({
+            kind: "multiple",
+            metadata: {
+                title: "Christopher Ing - Molecular Field Notes",
+                timestamp: new Date().toISOString(),
+                version: "1"
+            },
+            snapshots: [
+                {
+                    root: {
+                        kind: "root",
+                        children: [
+                            {
+                                kind: "canvas",
+                                params: { background_color: "#f5efe7" },
+                                custom: {
+                                    molstar_postprocessing: {
+                                        enable_ssao: true,
+                                        ssao_params: {
+                                            samples: 32,
+                                            radius: 5,
+                                            bias: 1,
+                                            blurKernelSize: 11,
+                                            blurDepthBias: 0.5,
+                                            resolutionScale: 1,
+                                            color: "0x000000",
+                                            transparentThreshold: 0.4
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                kind: "download",
+                                params: {
+                                    url: `https://www.ebi.ac.uk/pdbe/entry-files/download/${pdbId}.bcif`
+                                },
+                                children: [
+                                    {
+                                        kind: "parse",
+                                        params: { format: "bcif" },
+                                        children: [
+                                            {
+                                                kind: "structure",
+                                                params: { type: "model" },
+                                                children: [
+                                                    {
+                                                        kind: "component",
+                                                        params: { selector: "polymer" },
+                                                        children: [
+                                                            {
+                                                                kind: "representation",
+                                                                params: { type: representationType },
+                                                                children: [
+                                                                    {
+                                                                        kind: "color",
+                                                                        params: {},
+                                                                        custom: {
+                                                                            molstar_color_theme_name: "sequence-id",
+                                                                            molstar_color_theme_params: {
+                                                                                carbonColor: { name: "sequence-id", params: {} }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                kind: "focus",
+                                                                params: {
+                                                                    direction: [1, 0.6, 1.2],
+                                                                    up: [0, 1, 0],
+                                                                    radius_factor: 1.25,
+                                                                    radius_extent: 5
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        kind: "component",
+                                                        params: { selector: "ligand" },
+                                                        children: [
+                                                            {
+                                                                kind: "representation",
+                                                                params: { type: "ball_and_stick" },
+                                                                children: [
+                                                                    { kind: "color", params: { color: "#d07a37" } }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    metadata: {
+                        key: "intro",
+                        title: "Christopher Ing",
+                        description: "# Kaleidoscope Field\\n\\nThe Mol* protein viewer is the live source for the kaleidoscope.\\nUse the controls to shape slices, spin, and color flow.\\n",
+                        linger_duration_ms: 12000,
+                        transition_duration_ms: 800
+                    }
+                }
+            ]
+        });
 
-        mvsStories.loadFromData(mvsData, { format: 'mvsj' });
+        const queryParams = new URLSearchParams(window.location.search);
+        let currentPdb = (queryParams.get("pdb") || "1cbs").toLowerCase();
+        let currentRepresentation = queryParams.get("rep") || "cartoon";
 
-        const applySnapshotKey = (key) => {
+        const reloadStory = () => {
+            const data = buildMvsData(currentPdb, currentRepresentation);
+            mvsStories.loadFromData(data, { format: 'mvsj' });
+            tryDisableAxes();
+        };
+
+        reloadStory();
+
+        function disableAxes() {
             const context = mvsStories.getContext?.();
             const plugin = context?.state?.viewers?.value?.[0]?.model?.plugin;
-            const manager = plugin?.managers?.snapshot;
-            if (manager?.applyKey) {
-                manager.applyKey(key);
-                return true;
-            }
-            return false;
-        };
+            const canvas3d = plugin?.canvas3d;
+            if (!canvas3d?.setProps || !canvas3d?.props) return false;
 
-        let pendingSnapshotKey = null;
-        let pendingSnapshotTries = 0;
-        const queueSnapshotKey = (key) => {
-            pendingSnapshotKey = key;
-            pendingSnapshotTries = 0;
-            tryApplySnapshot();
-        };
+            const current = canvas3d.props;
+            const nextProps = {
+                ...current,
+                camera: {
+                    ...current.camera,
+                    helper: {
+                        ...current.camera?.helper,
+                        axes: { name: 'off', params: {} },
+                    },
+                },
+            };
+            canvas3d.setProps(nextProps);
+            return true;
+        }
 
-        const tryApplySnapshot = () => {
-            if (!pendingSnapshotKey) return;
-            if (applySnapshotKey(pendingSnapshotKey)) {
-                pendingSnapshotKey = null;
-                return;
+        let axisTries = 0;
+        function tryDisableAxes() {
+            if (disableAxes()) return;
+            if (axisTries < 20) {
+                axisTries += 1;
+                setTimeout(tryDisableAxes, 250);
             }
-            if (pendingSnapshotTries < 20) {
-                pendingSnapshotTries += 1;
-                setTimeout(tryApplySnapshot, 250);
-            }
-        };
+        }
+
+        tryDisableAxes();
 
         window.addEventListener('message', (event) => {
-            const allowedOrigin = window.location.origin;
-            if (allowedOrigin !== 'null' && event.origin !== allowedOrigin) return;
             const data = event.data || {};
-            if (data.type === 'apply-snapshot' && typeof data.key === 'string') {
-                queueSnapshotKey(data.key);
+            if (data.type === 'set-structure') {
+                if (typeof data.pdb === 'string' && data.pdb.trim()) {
+                    currentPdb = data.pdb.trim().toLowerCase();
+                }
+                if (typeof data.representation === 'string' && data.representation.trim()) {
+                    currentRepresentation = data.representation.trim();
+                }
+                reloadStory();
             }
         });
     
