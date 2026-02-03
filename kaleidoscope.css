@@ -18,10 +18,10 @@ body {
   overflow: hidden;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 12% 18%, rgba(239, 111, 89, 0.2), transparent 45%),
-    radial-gradient(circle at 88% 12%, rgba(47, 125, 209, 0.18), transparent 48%),
-    radial-gradient(circle at 72% 82%, rgba(53, 163, 163, 0.18), transparent 45%),
-    linear-gradient(130deg, rgba(255, 255, 255, 0.55), rgba(230, 237, 240, 0.85));
+    radial-gradient(circle at 12% 18%, rgba(255, 62, 120, 0.5), transparent 45%),
+    radial-gradient(circle at 88% 12%, rgba(0, 180, 255, 0.45), transparent 48%),
+    radial-gradient(circle at 72% 82%, rgba(46, 255, 170, 0.45), transparent 45%),
+    linear-gradient(130deg, rgba(255, 235, 150, 0.5), rgba(180, 240, 255, 0.55));
   color: var(--ink);
 }
 
@@ -45,6 +45,27 @@ body::before {
   z-index: 0;
 }
 
+body::after {
+  content: "";
+  position: fixed;
+  inset: -30%;
+  background: conic-gradient(
+    from 90deg,
+    rgba(255, 0, 153, 0.55),
+    rgba(255, 222, 0, 0.55),
+    rgba(0, 255, 178, 0.55),
+    rgba(0, 153, 255, 0.55),
+    rgba(173, 0, 255, 0.55),
+    rgba(255, 0, 153, 0.55)
+  );
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  filter: blur(50px) hue-rotate(0deg);
+  animation: rainbowCycle 10s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
 #kaleido {
   width: 100vw;
   height: 100vh;
@@ -56,6 +77,10 @@ body::before {
 }
 
 body.glow-off::before {
+  opacity: 0;
+}
+
+body.glow-off::after {
   opacity: 0;
 }
 
@@ -235,6 +260,37 @@ body.glow-off::before {
   gap: 8px;
 }
 
+.gradient-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gradient-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(28, 31, 34, 0.7);
+}
+
+.gradient-control select {
+  border-radius: 12px;
+  border: 1px solid rgba(28, 31, 34, 0.2);
+  padding: 8px 10px;
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.gradient-control select:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
 .toggle {
   display: flex;
   align-items: center;
@@ -351,6 +407,17 @@ body.controls-hidden .controls-toggle {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes rainbowCycle {
+  from {
+    transform: rotate(0deg);
+    filter: blur(50px) hue-rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+    filter: blur(50px) hue-rotate(360deg);
   }
 }
 .icon-button {
