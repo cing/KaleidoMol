@@ -43,12 +43,15 @@ const settings = {
 let sourceCanvas = null;
 let sourceReady = false;
 
-const audio = {
+const audioDrive = {
   ctx: null,
-  analyser: null,
-  data: null,
-  level: 0,
   stream: null,
+  processor: null,
+  gain: null,
+  essentia: null,
+  level: 0,
+  pulse: 0,
+  avg: 0,
 };
 
 const resize = () => {
@@ -103,20 +106,68 @@ window.addEventListener('pointermove', (event) => {
   settings.targetY = ny * settings.radius * 0.9;
 });
 
+const ensureEssentia = async () => {
+  if (audioDrive.essentia) return audioDrive.essentia;
+  if (typeof EssentiaWASM !== 'function' || typeof Essentia !== 'function') return null;
+  const wasm = await EssentiaWASM();
+  audioDrive.essentia = new Essentia(wasm);
+  return audioDrive.essentia;
+};
+
 const startAudio = async () => {
-  if (audio.ctx) return true;
+  if (audioDrive.ctx) return true;
   if (!navigator.mediaDevices?.getUserMedia) return false;
+
   try {
+    const essentia = await ensureEssentia();
+    if (!essentia) return false;
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
     const source = ctx.createMediaStreamSource(stream);
-    source.connect(analyser);
-    audio.ctx = ctx;
-    audio.analyser = analyser;
-    audio.data = new Uint8Array(analyser.fftSize);
-    audio.stream = stream;
+    const processor = ctx.createScriptProcessor(1024, 1, 1);
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+
+    processor.onaudioprocess = (event) => {
+      if (!settings.audioReactive || !audioDrive.essentia) return;
+      const input = event.inputBuffer.getChannelData(0);
+      if (!input || input.length === 0) return;
+
+      const vector = audioDrive.essentia.arrayToVector(input);
+      const band = audioDrive.essentia.BandPass(
+        vector,
+        140,
+        100,
+        ctx.sampleRate
+      );
+      const bandSignal = band?.signal ?? band ?? vector;
+      const rmsResult = audioDrive.essentia.RMS(bandSignal);
+      const rms =
+        typeof rmsResult === 'number'
+          ? rmsResult
+          : rmsResult?.rms ?? 0;
+
+      const energy = Math.min(1, Math.max(0, rms * 10));
+      audioDrive.level = audioDrive.level * 0.82 + energy * 0.18;
+      audioDrive.avg = audioDrive.avg * 0.985 + energy * 0.015;
+      const diff = Math.max(0, energy - audioDrive.avg);
+      const pulse = Math.min(1, diff * 6.5);
+      audioDrive.pulse = audioDrive.pulse * 0.6 + pulse * 0.4;
+    };
+
+    source.connect(processor);
+    processor.connect(gain);
+    gain.connect(ctx.destination);
+
+    audioDrive.ctx = ctx;
+    audioDrive.stream = stream;
+    audioDrive.processor = processor;
+    audioDrive.gain = gain;
+    audioDrive.level = 0;
+    audioDrive.pulse = 0;
+    audioDrive.avg = 0;
+
     return true;
   } catch (error) {
     console.warn('Audio input failed', error);
@@ -125,30 +176,27 @@ const startAudio = async () => {
 };
 
 const stopAudio = () => {
-  if (audio.stream) {
-    audio.stream.getTracks().forEach((track) => track.stop());
-    audio.stream = null;
+  if (audioDrive.processor) {
+    audioDrive.processor.onaudioprocess = null;
+    audioDrive.processor.disconnect();
   }
-  if (audio.ctx) {
-    audio.ctx.close();
+  if (audioDrive.gain) {
+    audioDrive.gain.disconnect();
   }
-  audio.ctx = null;
-  audio.analyser = null;
-  audio.data = null;
-  audio.level = 0;
-};
+  if (audioDrive.stream) {
+    audioDrive.stream.getTracks().forEach((track) => track.stop());
+  }
+  if (audioDrive.ctx) {
+    audioDrive.ctx.close();
+  }
 
-const getAudioLevel = () => {
-  if (!audio.analyser || !audio.data) return 0;
-  audio.analyser.getByteTimeDomainData(audio.data);
-  let sum = 0;
-  for (let i = 0; i < audio.data.length; i += 1) {
-    const v = (audio.data[i] - 128) / 128;
-    sum += v * v;
-  }
-  const rms = Math.sqrt(sum / audio.data.length);
-  audio.level = audio.level * 0.85 + rms * 0.15;
-  return audio.level;
+  audioDrive.ctx = null;
+  audioDrive.stream = null;
+  audioDrive.processor = null;
+  audioDrive.gain = null;
+  audioDrive.level = 0;
+  audioDrive.pulse = 0;
+  audioDrive.avg = 0;
 };
 
 const renderLayer = (targetCtx, options) => {
@@ -236,7 +284,8 @@ const draw = () => {
   settings.offsetX += (settings.targetX - settings.offsetX) * settings.ease;
   settings.offsetY += (settings.targetY - settings.offsetY) * settings.ease;
 
-  const audioLevel = settings.audioReactive ? getAudioLevel() : 0;
+  const audioLevel = settings.audioReactive ? audioDrive.level : 0;
+  const audioPulse = settings.audioReactive ? audioDrive.pulse : 0;
   const now = performance.now() * 0.001;
   const breathWave = settings.breathe ? Math.sin(now * 0.9) : 0;
   const pulse =
@@ -247,15 +296,21 @@ const draw = () => {
 
   const dynamicSlices = Math.max(
     6,
-    Math.round(settings.slices + breathWave * 4 + audioLevel * 6)
+    Math.round(settings.slices + breathWave * 5)
   );
   const dynamicZoom =
-    settings.baseZoom * (1 + pulse + breathWave * 0.06 + audioLevel * 0.18);
-  const dynamicSpeed = settings.rotationSpeed + audioLevel * 0.006;
+    settings.baseZoom *
+    (1 + pulse + breathWave * 0.08 + audioLevel * 0.35 + audioPulse * 0.6);
+  const dynamicSpeed = settings.rotationSpeed + audioPulse * 0.03 + audioLevel * 0.006;
 
   if (settings.spin) {
     settings.rotation += dynamicSpeed;
   }
+
+  const audioDrift = audioPulse * settings.radius * 0.14;
+  const audioOrbit = audioLevel * settings.radius * 0.04;
+  const audioOffsetX = Math.cos(now * 2.1) * audioDrift + Math.sin(now * 0.9) * audioOrbit;
+  const audioOffsetY = Math.sin(now * 1.7) * audioDrift + Math.cos(now * 1.3) * audioOrbit;
 
   let patternSource = sourceCanvas;
   if (maskCtx) {
@@ -278,8 +333,8 @@ const draw = () => {
       slices: dynamicSlices,
       zoom: dynamicZoom,
       rotation: settings.rotation,
-      offsetX: settings.offsetX,
-      offsetY: settings.offsetY,
+      offsetX: settings.offsetX + audioOffsetX,
+      offsetY: settings.offsetY + audioOffsetY,
       mirror: settings.mirror,
       patternSource,
     });
@@ -292,8 +347,8 @@ const draw = () => {
         slices: Math.max(6, dynamicSlices - 2),
         zoom: dynamicZoom * 0.92,
         rotation: -settings.rotation * 1.4 + now * 0.6,
-        offsetX: -settings.offsetX * 0.5,
-        offsetY: settings.offsetY * 0.5,
+        offsetX: -settings.offsetX * 0.5 - audioOffsetX * 0.4,
+        offsetY: settings.offsetY * 0.5 + audioOffsetY * 0.4,
         mirror: !settings.mirror,
         patternSource,
       });
@@ -302,15 +357,15 @@ const draw = () => {
   }
 
   const rainbowHue = settings.rainbow ? (now * settings.hueSpeed) % 360 : 0;
-  const hue = rainbowHue + audioLevel * 140;
-  const saturation = 1.35 + audioLevel * 0.4;
-  const contrast = 1.1 + audioLevel * 0.1;
+  const hue = rainbowHue + audioPulse * 220 + audioLevel * 120;
+  const saturation = 1.35 + audioLevel * 0.6 + audioPulse * 0.45;
+  const contrast = 1.1 + audioLevel * 0.25 + audioPulse * 0.2;
   const destWidth = width;
   const destHeight = height;
 
   ctx.save();
   if (settings.chromatic) {
-    const offset = 4 + audioLevel * 10;
+    const offset = 6 + audioLevel * 18 + audioPulse * 32;
     ctx.globalCompositeOperation = 'screen';
     ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue + 12}deg)`;
     ctx.drawImage(renderCanvas, offset, 0, destWidth, destHeight);
