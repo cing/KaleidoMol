@@ -3,16 +3,171 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mol* Kaleidoscope Prototype</title>
-    <link rel="stylesheet" href="kaleidoscope.css" />
+    <title>Christopher Ing - Kaleidoscope Art Demo</title>
+    <link rel="stylesheet" href="kaleidoscope.css?v=20260203d" />
   </head>
   <body>
     <canvas id="kaleido" aria-label="Kaleidoscope rendering"></canvas>
 
     <div class="overlay">
-      <p class="title">Mol* Kaleidoscope Prototype</p>
-      <p class="subtitle">Move your cursor to steer the pattern.</p>
+      <div class="control-panel" role="group" aria-label="Kaleidoscope controls">
+        <div class="control-header">
+          <div>
+            <p class="name">Christopher Ing</p>
+            <p class="subtitle">Kaleidoscope art demo</p>
+          </div>
+          <button class="reset" type="button" id="control-reset">Reset</button>
+        </div>
+
+        <div class="control-sliders">
+          <label class="control-row" for="control-slices">
+            <span>Slices</span>
+            <input
+              id="control-slices"
+              type="range"
+              min="8"
+              max="36"
+              step="1"
+              value="20"
+            />
+            <span class="value" id="control-slices-value">20</span>
+          </label>
+          <label class="control-row" for="control-zoom">
+            <span>Zoom</span>
+            <input
+              id="control-zoom"
+              type="range"
+              min="1.0"
+              max="3.0"
+              step="0.05"
+              value="1.9"
+            />
+            <span class="value" id="control-zoom-value">1.90</span>
+          </label>
+          <label class="control-row" for="control-speed">
+            <span>Spin</span>
+            <input
+              id="control-speed"
+              type="range"
+              min="0"
+              max="0.01"
+              step="0.0005"
+              value="0.0015"
+            />
+            <span class="value" id="control-speed-value">0.0015</span>
+          </label>
+        </div>
+
+        <div class="control-field">
+          <label for="control-pdb">PDB code</label>
+          <div class="control-input">
+            <input
+              id="control-pdb"
+              type="text"
+              value="1cbs"
+              maxlength="6"
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <button class="mini-button" type="button" id="control-pdb-load">
+              Load
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="representation-grid"
+          role="radiogroup"
+          aria-label="Representation"
+        >
+          <label class="toggle">
+            <input
+              id="rep-cartoon"
+              type="radio"
+              name="representation"
+              value="cartoon"
+              checked
+            />
+            <span>Cartoon</span>
+          </label>
+          <label class="toggle">
+            <input
+              id="rep-spacefill"
+              type="radio"
+              name="representation"
+              value="spacefill"
+            />
+            <span>Spacefill</span>
+          </label>
+          <label class="toggle">
+            <input
+              id="rep-surface"
+              type="radio"
+              name="representation"
+              value="molecular-surface"
+            />
+            <span>Surface</span>
+          </label>
+        </div>
+
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="toggle-mirror" type="checkbox" checked />
+            <span>Mirror</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-spin" type="checkbox" checked />
+            <span>Auto spin</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-rainbow" type="checkbox" checked />
+            <span>Rainbow</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-pulse" type="checkbox" />
+            <span>Pulse</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-drift" type="checkbox" checked />
+            <span>Drift</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-glow" type="checkbox" checked />
+            <span>Glow</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-audio" type="checkbox" />
+            <span>Audio pulse</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-aberration" type="checkbox" />
+            <span>Chromatic</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-breathe" type="checkbox" />
+            <span>Breathing</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-double" type="checkbox" />
+            <span>Double layer</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-trail" type="checkbox" />
+            <span>Trails</span>
+          </label>
+        </div>
+
+      </div>
     </div>
+
+    <button
+      class="controls-toggle"
+      type="button"
+      id="controls-toggle"
+      aria-expanded="true"
+    >
+      Hide controls
+    </button>
 
     <div class="source">
       <iframe
@@ -22,6 +177,6 @@
       ></iframe>
     </div>
 
-    <script src="kaleidoscope.js"></script>
+    <script src="kaleidoscope.js?v=20260203d"></script>
   </body>
 </html>
