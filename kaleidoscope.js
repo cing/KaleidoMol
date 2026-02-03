@@ -31,11 +31,10 @@ const settings = {
   pulseSpeed: 0.9,
   drift: true,
   rainbow: true,
-  chromatic: false,
   breathe: false,
   doubleLayer: false,
   trail: false,
-  trailFade: 0.08,
+  trailFade: 0.008,
   audioReactive: false,
   hueSpeed: 36,
 };
@@ -364,19 +363,9 @@ const draw = () => {
   const destHeight = height;
 
   ctx.save();
-  if (settings.chromatic) {
-    const offset = 6 + audioLevel * 18 + audioPulse * 32;
-    ctx.globalCompositeOperation = 'screen';
-    ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue + 12}deg)`;
-    ctx.drawImage(renderCanvas, offset, 0, destWidth, destHeight);
-    ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue - 12}deg)`;
-    ctx.drawImage(renderCanvas, -offset, 0, destWidth, destHeight);
-    ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue}deg)`;
-    ctx.drawImage(renderCanvas, 0, offset * 0.5, destWidth, destHeight);
-  } else {
-    ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue}deg)`;
-    ctx.drawImage(renderCanvas, 0, 0, destWidth, destHeight);
-  }
+  ctx.globalAlpha = settings.trail ? 0.78 : 1;
+  ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue}deg)`;
+  ctx.drawImage(renderCanvas, 0, 0, destWidth, destHeight);
   ctx.restore();
 
   requestAnimationFrame(draw);
@@ -400,7 +389,6 @@ const controls = {
   drift: document.getElementById('toggle-drift'),
   glow: document.getElementById('toggle-glow'),
   audio: document.getElementById('toggle-audio'),
-  aberration: document.getElementById('toggle-aberration'),
   breathe: document.getElementById('toggle-breathe'),
   doubleLayer: document.getElementById('toggle-double'),
   trail: document.getElementById('toggle-trail'),
@@ -434,7 +422,6 @@ const bindControls = () => {
   settings.rainbow = controls.rainbow.checked;
   settings.pulse = controls.pulse.checked;
   settings.drift = controls.drift.checked;
-  settings.chromatic = controls.aberration.checked;
   settings.breathe = controls.breathe.checked;
   settings.doubleLayer = controls.doubleLayer.checked;
   settings.trail = controls.trail.checked;
@@ -559,10 +546,6 @@ const bindControls = () => {
     }
   });
 
-  controls.aberration.addEventListener('change', (event) => {
-    settings.chromatic = event.target.checked;
-  });
-
   controls.breathe.addEventListener('change', (event) => {
     settings.breathe = event.target.checked;
   });
@@ -600,7 +583,6 @@ const bindControls = () => {
     settings.pulse = false;
     settings.drift = true;
     settings.rainbow = true;
-    settings.chromatic = false;
     settings.breathe = false;
     settings.doubleLayer = false;
     settings.trail = false;
@@ -616,7 +598,6 @@ const bindControls = () => {
     controls.drift.checked = true;
     controls.glow.checked = true;
     controls.audio.checked = false;
-    controls.aberration.checked = false;
     controls.breathe.checked = false;
     controls.doubleLayer.checked = false;
     controls.trail.checked = false;
