@@ -74,19 +74,30 @@ body.glow-off::before {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.panel-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-title {
+  text-align: right;
+}
+
 .control-panel {
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-width: 260px;
   max-width: 340px;
-}
-
-.control-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .name {
@@ -148,7 +159,7 @@ body.glow-off::before {
 
 .control-input {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 8px;
   align-items: center;
 }
@@ -238,10 +249,7 @@ body.glow-off::before {
 }
 
 .controls-toggle {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 4;
+  position: static;
   border: 1px solid rgba(28, 31, 34, 0.2);
   background: rgba(255, 255, 255, 0.85);
   border-radius: 999px;
@@ -264,21 +272,42 @@ body.glow-off::before {
   outline-offset: 2px;
 }
 
+body.controls-hidden .control-panel,
+body.controls-hidden .panel-title,
+body.controls-hidden .panel-actions .reset {
+  display: none;
+}
+
 body.controls-hidden .overlay {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-8px);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 body.controls-hidden .controls-toggle {
-  background: var(--accent);
-  color: #fff;
-  border-color: transparent;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+  border-color: rgba(28, 31, 34, 0.2);
+  opacity: 0.5;
 }
 
 .toggle input {
   margin: 0;
   accent-color: var(--accent-2);
+}
+
+.panel-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(28, 31, 34, 0.12);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(28, 31, 34, 0.6);
 }
 
 
@@ -323,4 +352,11 @@ body.controls-hidden .controls-toggle {
   to {
     transform: rotate(360deg);
   }
+}
+.icon-button {
+  padding: 6px 10px;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

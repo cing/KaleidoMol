@@ -6,6 +6,13 @@ const maskCtx = maskCanvas.getContext('2d');
 const renderCanvas = document.createElement('canvas');
 const renderCtx = renderCanvas.getContext('2d');
 
+const stats = {
+  fpsEl: document.getElementById('stats-fps'),
+  memEl: document.getElementById('stats-mem'),
+  last: performance.now(),
+  frames: 0,
+};
+
 const targetOrigin = '*';
 const pendingMessages = [];
 const viewerState = {
@@ -64,7 +71,7 @@ const resize = () => {
   canvas.style.height = `${height}px`;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  settings.radius = Math.min(width, height) * 0.72;
+  settings.radius = Math.hypot(width, height) * 0.55;
 
   renderCanvas.width = width * dpr;
   renderCanvas.height = height * dpr;
@@ -257,6 +264,22 @@ const draw = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
 
+  if (stats.fpsEl || stats.memEl) {
+    stats.frames += 1;
+    const now = performance.now();
+    const delta = now - stats.last;
+    if (delta > 500) {
+      const fps = Math.round((stats.frames * 1000) / delta);
+      if (stats.fpsEl) stats.fpsEl.textContent = `FPS ${fps}`;
+      if (stats.memEl) {
+        const heap = performance.memory?.usedJSHeapSize;
+        stats.memEl.textContent = heap ? `MEM ${Math.round(heap / (1024 * 1024))}MB` : 'MEM --';
+      }
+      stats.frames = 0;
+      stats.last = now;
+    }
+  }
+
   if (!settings.trail) {
     ctx.clearRect(0, 0, width, height);
   } else {
@@ -396,6 +419,7 @@ const controls = {
   reset: document.getElementById('control-reset'),
   pdbInput: document.getElementById('control-pdb'),
   pdbLoad: document.getElementById('control-pdb-load'),
+  save: document.getElementById('control-save'),
   representationRadios: document.querySelectorAll('input[name=\"representation\"]'),
 };
 
@@ -520,6 +544,32 @@ const bindControls = () => {
     }
   });
 
+  controls.save?.addEventListener('click', () => {
+    const overlay = document.querySelector('.overlay');
+    const prevVisibility = overlay?.style.visibility;
+    const prevPointer = overlay?.style.pointerEvents;
+    if (overlay) {
+      overlay.style.visibility = 'hidden';
+      overlay.style.pointerEvents = 'none';
+    }
+    requestAnimationFrame(() => {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'kaleidoscope.png';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } finally {
+        if (overlay) {
+          overlay.style.visibility = prevVisibility || '';
+          overlay.style.pointerEvents = prevPointer || '';
+        }
+      }
+    });
+  });
+
     controls.representationRadios.forEach((radio) => {
       radio.addEventListener('change', () => {
         if (!radio.checked) return;
@@ -562,7 +612,7 @@ const bindControls = () => {
   const updateControlsVisibility = () => {
     document.body.classList.toggle('controls-hidden', !controlsVisible);
     if (controls.togglePanel) {
-      controls.togglePanel.textContent = controlsVisible ? 'Hide controls' : 'Show controls';
+      controls.togglePanel.textContent = controlsVisible ? 'hide' : 'Show';
       controls.togglePanel.setAttribute('aria-expanded', String(controlsVisible));
     }
   };
