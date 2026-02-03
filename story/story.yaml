@@ -11,11 +11,6 @@ settings:
 # Scene definitions - reference folders to load from scenes/ directory
 scenes:
   - folder: scene1
-  - folder: origin
-  - folder: research
-  - folder: build
-  - folder: community
-  - folder: now
 
 # Story-level assets that can be referenced by scenes
 assets:

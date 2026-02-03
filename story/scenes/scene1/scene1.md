@@ -1,6 +1,4 @@
-# Molecular Autobiography
+# Kaleidoscope Field
 
-Hover or tap the floating labels on the protein to reveal data panels.
-Use the Origin, Research, Build, Community, and Now chips below the viewer to jump the camera to each annotation.
-
-**Tip:** Edit `story/annotations.cif` to change the labels and panel text.
+The Mol* protein viewer is the live source for the kaleidoscope.
+Use the controls to shape slices, spin, and color flow.
