@@ -257,6 +257,7 @@
         let currentPdb = (queryParams.get("pdb") || "1cbs").toLowerCase();
         let currentRepresentation = queryParams.get("rep") || "cartoon";
         const initialBg = (queryParams.get("bg") || "default").toLowerCase();
+        let illustrativeEnabled = queryParams.get("illustrative") === "1";
         const DEFAULT_BG_HEX = "#f5efe7";
         const DEFAULT_BG_INT = 0xf5efe7;
         let currentBgColor = DEFAULT_BG_HEX;
@@ -272,6 +273,7 @@
         let useExternalBg = false;
         const DEFAULT_BG = DEFAULT_BG_INT;
         let axisTries = 0;
+        let loadToken = 0;
 
         function disableAxes() {
             const context = mvsStories.getContext?.();
@@ -310,6 +312,8 @@
             bgWarned = false;
             tryDisableAxes();
             applyDefaultBackground();
+            loadToken += 1;
+            waitForStructureReady(loadToken);
         };
 
         reloadStory();
@@ -385,9 +389,6 @@
                     color: themeName || "default",
                     colorParams: themeParams || {}
                 });
-                const colorHex = themeParams?.value !== undefined
-                    ? `#${themeParams.value.toString(16).padStart(6, '0')}`
-                    : '';
                 return true;
             } catch (error) {
                 if (!colorThemeWarned) {
@@ -396,6 +397,14 @@
                 }
                 return false;
             }
+        }
+
+        function applyActiveTheme() {
+            if (illustrativeEnabled) {
+                applyColorThemeWithRetry("illustrative", {});
+                return;
+            }
+            applyColorThemeWithRetry(currentColorThemeName, currentColorThemeParams);
         }
 
         function applyColorThemeWithRetry(themeName, themeParams) {
@@ -488,6 +497,21 @@
             bgAnimation = requestAnimationFrame(animate);
         }
 
+        async function waitForStructureReady(token) {
+            if (token !== loadToken) return;
+            const plugin = await getPlugin();
+            const structures = plugin?.managers?.structure?.hierarchy?.current?.structures || [];
+            if (structures.length) {
+                window.parent?.postMessage(
+                    { type: 'structure-loaded', pdb: currentPdb },
+                    '*'
+                );
+                applyActiveTheme();
+                return;
+            }
+            setTimeout(() => waitForStructureReady(token), 200);
+        }
+
         const handleForeground = (data) => {
             if (!data) return;
             if (data.mode === 'sequence') {
@@ -495,26 +519,25 @@
                 currentColorThemeParams = {
                     carbonColor: { name: "sequence-id", params: {} }
                 };
-                applyColorThemeWithRetry(
-                    currentColorThemeName,
-                    currentColorThemeParams
-                );
+                applyActiveTheme();
             }
             if (data.mode === 'uniform' && typeof data.color === 'string') {
                 const colorInt = hexToInt(data.color);
                 if (colorInt !== null) {
                     currentColorThemeName = "uniform";
                     currentColorThemeParams = { value: colorInt, color: colorInt };
-                    applyColorThemeWithRetry(
-                        currentColorThemeName,
-                        currentColorThemeParams
-                    );
+                    applyActiveTheme();
                 }
             }
         };
 
         window.__mvsSetForeground = (payload) => {
             handleForeground(payload);
+        };
+
+        const handleIllustrative = (enabled) => {
+            illustrativeEnabled = Boolean(enabled);
+            applyActiveTheme();
         };
 
         window.addEventListener('message', async (event) => {
@@ -558,6 +581,9 @@
             }
             if (data.type === 'set-foreground') {
                 handleForeground(data);
+            }
+            if (data.type === 'set-illustrative') {
+                handleIllustrative(data.enabled);
             }
         });
     

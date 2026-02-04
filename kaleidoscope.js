@@ -19,6 +19,7 @@ const viewerState = {
   pdb: '1cbs',
   representation: 'cartoon',
   background: 'default',
+  illustrative: false,
 };
 
 const sendForegroundToViewer = (payload) => {
@@ -158,6 +159,7 @@ const settings = {
   trailFade: 0.008,
   audioReactive: false,
   hueSpeed: 36,
+  illustrative: false,
 };
 
 let sourceCanvas = null;
@@ -654,6 +656,7 @@ const controls = {
   pulse: document.getElementById('toggle-pulse'),
   drift: document.getElementById('toggle-drift'),
   glow: document.getElementById('toggle-glow'),
+  illustrative: document.getElementById('toggle-illustrative'),
   audio: document.getElementById('toggle-audio'),
   breathe: document.getElementById('toggle-breathe'),
   doubleLayer: document.getElementById('toggle-double'),
@@ -665,6 +668,37 @@ const controls = {
   save: document.getElementById('control-save'),
   representationRadios: document.querySelectorAll('input[name=\"representation\"]'),
 };
+
+const pdbInputWrap = controls.pdbInput?.closest('.control-input');
+let pdbLoadingTimeout = null;
+
+const setPdbLoading = (active) => {
+  if (!pdbInputWrap) return;
+  pdbInputWrap.classList.toggle('is-loading', active);
+  if (!active) return;
+  pdbInputWrap.classList.remove('is-loaded');
+};
+
+const completePdbLoading = () => {
+  if (!pdbInputWrap) return;
+  pdbInputWrap.classList.remove('is-loading');
+  pdbInputWrap.classList.add('is-loaded');
+  setTimeout(() => {
+    pdbInputWrap.classList.remove('is-loaded');
+  }, 600);
+};
+
+window.addEventListener('message', (event) => {
+  const data = event.data || {};
+  if (data.type === 'structure-loaded') {
+    if (!viewerState.pdb || data.pdb !== viewerState.pdb) return;
+    if (pdbLoadingTimeout) {
+      clearTimeout(pdbLoadingTimeout);
+      pdbLoadingTimeout = null;
+    }
+    completePdbLoading();
+  }
+});
 
 const setBodyClass = (name, enabled) => {
   document.body.classList.toggle(name, enabled);
@@ -693,7 +727,9 @@ const bindControls = () => {
   settings.breathe = controls.breathe.checked;
   settings.doubleLayer = controls.doubleLayer.checked;
   settings.trail = controls.trail.checked;
+  settings.illustrative = controls.illustrative?.checked || false;
   viewerState.pdb = controls.pdbInput?.value?.trim().toLowerCase() || viewerState.pdb;
+  viewerState.illustrative = settings.illustrative;
   const activeRepresentation = Array.from(controls.representationRadios).find((radio) => radio.checked);
   if (activeRepresentation) {
     viewerState.representation = activeRepresentation.value;
@@ -757,6 +793,15 @@ const bindControls = () => {
     setBodyClass('glow-off', !event.target.checked);
   });
 
+  controls.illustrative?.addEventListener('change', (event) => {
+    settings.illustrative = event.target.checked;
+    viewerState.illustrative = settings.illustrative;
+    sendToViewer({
+      type: 'set-illustrative',
+      enabled: settings.illustrative,
+    });
+  });
+
   const sendToViewer = (payload) => {
     if (!iframe?.contentWindow) {
       pendingMessages.push(payload);
@@ -773,6 +818,11 @@ const bindControls = () => {
     if (viewerState.background) {
       url.searchParams.set('bg', viewerState.background);
     }
+    if (viewerState.illustrative) {
+      url.searchParams.set('illustrative', '1');
+    } else {
+      url.searchParams.delete('illustrative');
+    }
     url.searchParams.set('t', String(Date.now()));
     iframe.src = url.toString();
   };
@@ -784,6 +834,11 @@ const bindControls = () => {
     if (!sanitized) return;
     controls.pdbInput.value = sanitized;
     viewerState.pdb = sanitized;
+    setPdbLoading(true);
+    if (pdbLoadingTimeout) clearTimeout(pdbLoadingTimeout);
+    pdbLoadingTimeout = setTimeout(() => {
+      setPdbLoading(false);
+    }, 15000);
     sendToViewer({
       type: 'set-structure',
       pdb: viewerState.pdb,
@@ -826,10 +881,10 @@ const bindControls = () => {
     });
   });
 
-    controls.representationRadios.forEach((radio) => {
-      radio.addEventListener('change', () => {
-        if (!radio.checked) return;
-        viewerState.representation = radio.value;
+  controls.representationRadios.forEach((radio) => {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      viewerState.representation = radio.value;
         sendToViewer({
           type: 'set-structure',
           pdb: viewerState.pdb,
@@ -894,6 +949,7 @@ const bindControls = () => {
     settings.doubleLayer = false;
     settings.trail = false;
     settings.audioReactive = false;
+    settings.illustrative = false;
 
     controls.slices.value = String(settings.slices);
     controls.zoom.value = String(settings.baseZoom);
@@ -909,6 +965,9 @@ const bindControls = () => {
     controls.pulse.checked = false;
     controls.drift.checked = true;
     controls.glow.checked = true;
+    if (controls.illustrative) {
+      controls.illustrative.checked = false;
+    }
     controls.audio.checked = false;
     controls.breathe.checked = false;
     controls.doubleLayer.checked = false;
@@ -920,6 +979,11 @@ const bindControls = () => {
 
     setBodyClass('glow-off', false);
     stopAudio();
+    if (pdbLoadingTimeout) {
+      clearTimeout(pdbLoadingTimeout);
+      pdbLoadingTimeout = null;
+    }
+    setPdbLoading(false);
 
     syncSlider(controls.slices, controls.slicesValue);
     syncSlider(controls.zoom, controls.zoomValue, (v) => Number(v).toFixed(2));
@@ -927,10 +991,15 @@ const bindControls = () => {
 
     viewerState.pdb = '1cbs';
     viewerState.representation = 'cartoon';
+    viewerState.illustrative = false;
     sendToViewer({
       type: 'set-structure',
       pdb: viewerState.pdb,
       representation: viewerState.representation,
+    });
+    sendToViewer({
+      type: 'set-illustrative',
+      enabled: false,
     });
     reloadViewer();
     lastBgSync = 0;
