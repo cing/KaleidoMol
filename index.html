@@ -3,126 +3,230 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Christopher Ing - Molecular Field Notes</title>
-    <meta
-      name="description"
-      content="Christopher Ing - a creative molecular homepage built with MolViewStories."
-    />
-    <link rel="stylesheet" href="styles.css" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap"
-    />
+    <title>Christopher Ing - Kaleidoscope Art Demo</title>
+    <link rel="stylesheet" href="kaleidoscope.css?v=20260204x" />
   </head>
   <body>
-    <div class="backdrop" aria-hidden="true"></div>
+    <canvas id="kaleido" aria-label="Kaleidoscope rendering"></canvas>
 
-    <main class="page">
-      <header class="intro">
-        <p class="eyebrow">Christopher Ing</p>
-        <h1>Molecular Field Notes</h1>
-        <p class="lead">
-          A living protein you can explore. Hover the glowing labels to uncover
-          the stories, values, and work that shaped my path.
-        </p>
-        <div class="tags">
-          <span>Scientist</span>
-          <span>Builder</span>
-          <span>Storyteller</span>
+    <div class="overlay">
+      <div class="panel-top">
+        <div class="panel-actions">
+          <button
+            class="controls-toggle"
+            type="button"
+            id="controls-toggle"
+            aria-expanded="true"
+          >
+            hide
+          </button>
+          <button class="reset" type="button" id="control-reset">Reset</button>
         </div>
-        <div class="links">
-          <a href="#" aria-label="Email Christopher">Email</a>
-          <a href="#" aria-label="Christopher on GitHub">GitHub</a>
-          <a href="#" aria-label="Christopher on LinkedIn">LinkedIn</a>
+        <div class="panel-title">
+          <p class="name">Fresh Photons</p>
+          <p class="subtitle">Kaleidoscopic Protein Viewer</p>
         </div>
-        <p class="note">
-          Edit the floating panel copy in <span>story/annotations.cif</span>.
-        </p>
-      </header>
+      </div>
 
-      <section class="viewer-panel">
-        <div class="viewer-frame">
-          <iframe
-            title="Christopher Ing protein story"
-            src="story/viewer.html"
-            loading="lazy"
-          ></iframe>
+      <div class="control-panel" role="group" aria-label="Kaleidoscope controls">
+
+        <div class="control-sliders">
+          <label class="control-row" for="control-slices">
+            <span>Slices</span>
+            <input
+              id="control-slices"
+              type="range"
+              min="8"
+              max="36"
+              step="1"
+              value="20"
+            />
+            <span class="value" id="control-slices-value">20</span>
+          </label>
+          <label class="control-row" for="control-zoom">
+            <span>Zoom</span>
+            <input
+              id="control-zoom"
+              type="range"
+              min="1.0"
+              max="3.0"
+              step="0.05"
+              value="1.9"
+            />
+            <span class="value" id="control-zoom-value">1.90</span>
+          </label>
+          <label class="control-row" for="control-speed">
+            <span>Spin</span>
+            <input
+              id="control-speed"
+              type="range"
+              min="0"
+              max="0.01"
+              step="0.0005"
+              value="0.0015"
+            />
+            <span class="value" id="control-speed-value">0.0015</span>
+          </label>
         </div>
-        <div class="legend">
-          <button
-            class="legend-item"
-            type="button"
-            data-snapshot="origin"
-            style="--accent: #ef6f59"
-          >
-            Origin
-          </button>
-          <button
-            class="legend-item"
-            type="button"
-            data-snapshot="research"
-            style="--accent: #f3b64e"
-          >
-            Research
-          </button>
-          <button
-            class="legend-item"
-            type="button"
-            data-snapshot="build"
-            style="--accent: #35a3a3"
-          >
-            Build
-          </button>
-          <button
-            class="legend-item"
-            type="button"
-            data-snapshot="community"
-            style="--accent: #2f7dd1"
-          >
-            Community
-          </button>
-          <button
-            class="legend-item"
-            type="button"
-            data-snapshot="now"
-            style="--accent: #6a8f5b"
-          >
-            Now
-          </button>
+
+        <div class="control-field">
+          <label for="control-pdb">PDB code</label>
+          <div class="control-input">
+            <input
+              id="control-pdb"
+              type="text"
+              value="1cbs"
+              maxlength="6"
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <button class="mini-button" type="button" id="control-pdb-load">
+              Load
+            </button>
+            <button class="mini-button icon-button" type="button" id="control-save" aria-label="Save PNG">
+              <span aria-hidden="true">💾</span>
+            </button>
+          </div>
         </div>
-        <p class="footer">
-          Structure: PDB 1CBS - Retinoic Acid Binding Protein II
-        </p>
-      </section>
-    </main>
 
-    <script>
-      const viewerFrame = document.querySelector(".viewer-frame iframe");
-      const legendButtons = document.querySelectorAll(".legend-item[data-snapshot]");
+        <div
+          class="representation-grid"
+          role="radiogroup"
+          aria-label="Representation"
+        >
+          <label class="toggle">
+            <input
+              id="rep-cartoon"
+              type="radio"
+              name="representation"
+              value="cartoon"
+              checked
+            />
+            <span>Cartoon</span>
+          </label>
+          <label class="toggle">
+            <input
+              id="rep-spacefill"
+              type="radio"
+              name="representation"
+              value="spacefill"
+            />
+            <span>Spacefill</span>
+          </label>
+          <label class="toggle">
+            <input
+              id="rep-surface"
+              type="radio"
+              name="representation"
+              value="molecular-surface"
+            />
+            <span>Surface</span>
+          </label>
+        </div>
 
-      const setActive = (button) => {
-        legendButtons.forEach((item) => {
-          const isActive = item === button;
-          item.classList.toggle("is-active", isActive);
-          item.setAttribute("aria-pressed", isActive ? "true" : "false");
-        });
-      };
+        <div class="gradient-controls">
+          <label class="gradient-control">
+            <span>Foreground</span>
+            <select id="foreground-gradient">
+              <option value="default">Default</option>
+              <option value="rainbow">Rainbow</option>
+              <option value="atlas">Atlas</option>
+              <option value="timber">Timber</option>
+              <option value="sunset">Sunset</option>
+              <option value="cool-blues">Cool Blues</option>
+              <option value="purple-dream">Purple Dream</option>
+              <option value="emerald-water">Emerald Water</option>
+              <option value="juicy-orange">Juicy Orange</option>
+              <option value="moonlit-asteroid">Moonlit Asteroid</option>
+              <option value="mirage">Mirage</option>
+            </select>
+          </label>
+          <label class="gradient-control">
+            <span>Background</span>
+            <select id="background-gradient">
+              <option value="default">Default</option>
+              <option value="black">Black</option>
+              <option value="white">White</option>
+              <option value="rainbow">Rainbow</option>
+              <option value="atlas">Atlas</option>
+              <option value="timber">Timber</option>
+              <option value="sunset">Sunset</option>
+              <option value="cool-blues">Cool Blues</option>
+              <option value="purple-dream">Purple Dream</option>
+              <option value="emerald-water">Emerald Water</option>
+              <option value="juicy-orange">Juicy Orange</option>
+              <option value="moonlit-asteroid">Moonlit Asteroid</option>
+              <option value="mirage">Mirage</option>
+            </select>
+          </label>
+        </div>
 
-      legendButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", "false");
-        button.addEventListener("click", () => {
-          const snapshotKey = button.dataset.snapshot;
-          const targetOrigin =
-            window.location.origin === "null" ? "*" : window.location.origin;
+        <div class="control-field quick-styles">
+          <label>Quick styles</label>
+          <div class="toggle-grid">
+            <label class="toggle">
+              <input id="toggle-illustrative" type="checkbox" />
+              <span>Illustrative</span>
+            </label>
+          </div>
+        </div>
 
-          viewerFrame?.contentWindow?.postMessage(
-            { type: "apply-snapshot", key: snapshotKey },
-            targetOrigin
-          );
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="toggle-mirror" type="checkbox" checked />
+            <span>Mirror</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-spin" type="checkbox" checked />
+            <span>Auto spin</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-pulse" type="checkbox" />
+            <span>Pulse</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-drift" type="checkbox" checked />
+            <span>Drift</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-glow" type="checkbox" checked />
+            <span>Glow</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-audio" type="checkbox" />
+            <span>Audio Drive</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-breathe" type="checkbox" />
+            <span>Breathing</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-double" type="checkbox" />
+            <span>Double layer</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-trail" type="checkbox" />
+            <span>Trails</span>
+          </label>
+        </div>
 
-          setActive(button);
-        });
-      });
-    </script>
+        <div class="panel-stats" aria-live="polite">
+          <span id="stats-fps">FPS --</span>
+          <span id="stats-mem">MEM --</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="source">
+      <iframe
+        title="Mol* viewer source"
+        src="story/viewer.html?v=20260204ae"
+        loading="eager"
+      ></iframe>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia-wasm.web.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia.js-core.js"></script>
+    <script src="kaleidoscope.js?v=20260204x"></script>
   </body>
 </html>
