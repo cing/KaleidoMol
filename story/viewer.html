@@ -19,6 +19,7 @@
             bottom: 0;
         }
 
+
         #controls {
             position: absolute;
             left: 66%;
@@ -99,6 +100,8 @@
             pointer-events: none;
             z-index: 2;
         }
+
+        
     </style>
     <script src="https://cdn.jsdelivr.net/npm/molstar@5.5.0/build/mvs-stories/mvs-stories.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/molstar@5.5.0/build/mvs-stories/mvs-stories.css" />
@@ -107,6 +110,7 @@
     <div id="viewer">
         <mvs-stories-viewer></mvs-stories-viewer>
         <div id="axis-cover" aria-hidden="true"></div>
+        
     </div>
     <div id="controls">
         <mvs-stories-snapshot-markdown style="flex-grow: 1;"></ mvs-stories-snapshot-markdown>
@@ -121,7 +125,28 @@
 
     <script>
         
-        const buildMvsData = (pdbId, representationType) => ({
+        const normalizeRepresentation = (representationType) => {
+            const rep = (representationType || 'cartoon').toLowerCase();
+            if (rep === 'molecular-surface' || rep === 'molecular_surface' || rep === 'surface') {
+                return { type: 'surface', surface_type: 'molecular' };
+            }
+            if (rep === 'gaussian-surface' || rep === 'gaussian_surface' || rep === 'gaussian') {
+                return { type: 'surface', surface_type: 'gaussian' };
+            }
+            if (rep === 'spacefill' || rep === 'space-filling' || rep === 'space_filling') {
+                return { type: 'spacefill' };
+            }
+            return { type: rep || 'cartoon' };
+        };
+
+        let currentColorThemeName = "sequence-id";
+        let currentColorThemeParams = {
+            carbonColor: { name: "sequence-id", params: {} }
+        };
+
+        const buildMvsData = (pdbId, representationType) => {
+            const representationParams = normalizeRepresentation(representationType);
+            return ({
             kind: "multiple",
             metadata: {
                 title: "Christopher Ing - Molecular Field Notes",
@@ -135,7 +160,7 @@
                         children: [
                             {
                                 kind: "canvas",
-                                params: { background_color: "#f5efe7" },
+                                params: { background_color: currentBgColor },
                                 custom: {
                                     molstar_postprocessing: {
                                         enable_ssao: true,
@@ -172,16 +197,14 @@
                                                         children: [
                                                             {
                                                                 kind: "representation",
-                                                                params: { type: representationType },
+                                                                params: representationParams,
                                                                 children: [
                                                                     {
                                                                         kind: "color",
                                                                         params: {},
                                                                         custom: {
-                                                                            molstar_color_theme_name: "sequence-id",
-                                                                            molstar_color_theme_params: {
-                                                                                carbonColor: { name: "sequence-id", params: {} }
-                                                                            }
+                                                                            molstar_color_theme_name: currentColorThemeName,
+                                                                            molstar_color_theme_params: currentColorThemeParams
                                                                         }
                                                                     }
                                                                 ]
@@ -228,18 +251,27 @@
                 }
             ]
         });
+        };
 
         const queryParams = new URLSearchParams(window.location.search);
         let currentPdb = (queryParams.get("pdb") || "1cbs").toLowerCase();
         let currentRepresentation = queryParams.get("rep") || "cartoon";
+        const initialBg = (queryParams.get("bg") || "default").toLowerCase();
+        const DEFAULT_BG_HEX = "#f5efe7";
+        const DEFAULT_BG_INT = 0xf5efe7;
+        let currentBgColor = DEFAULT_BG_HEX;
+        if (initialBg === "black") currentBgColor = "#000000";
+        if (initialBg === "white") currentBgColor = "#ffffff";
 
-        const reloadStory = () => {
-            const data = buildMvsData(currentPdb, currentRepresentation);
-            mvsStories.loadFromData(data, { format: 'mvsj' });
-            tryDisableAxes();
-        };
-
-        reloadStory();
+        let bgAnimation = null;
+        let bgLastUpdate = 0;
+        const bgSpeed = 36;
+        let pluginCache = null;
+        let bgFailures = 0;
+        let bgWarned = false;
+        let useExternalBg = false;
+        const DEFAULT_BG = DEFAULT_BG_INT;
+        let axisTries = 0;
 
         function disableAxes() {
             const context = mvsStories.getContext?.();
@@ -262,7 +294,6 @@
             return true;
         }
 
-        let axisTries = 0;
         function tryDisableAxes() {
             if (disableAxes()) return;
             if (axisTries < 20) {
@@ -271,9 +302,222 @@
             }
         }
 
+        const reloadStory = () => {
+            const data = buildMvsData(currentPdb, currentRepresentation);
+            mvsStories.loadFromData(data, { format: 'mvsj' });
+            pluginCache = null;
+            bgFailures = 0;
+            bgWarned = false;
+            tryDisableAxes();
+            applyDefaultBackground();
+        };
+
+        reloadStory();
+
+        
+
         tryDisableAxes();
 
-        window.addEventListener('message', (event) => {
+        
+
+        async function getPlugin() {
+            if (pluginCache) return pluginCache;
+            const ctx = mvsStories.getContext?.();
+            if (ctx && typeof ctx.then === 'function') {
+                const resolved = await ctx;
+                pluginCache = resolved?.state?.viewers?.value?.[0]?.model?.plugin || null;
+            } else {
+                pluginCache = ctx?.state?.viewers?.value?.[0]?.model?.plugin || null;
+            }
+            return pluginCache;
+        }
+
+        function hslToHexInt(h, s, l) {
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const hh = h / 60;
+            const x = c * (1 - Math.abs((hh % 2) - 1));
+            let r = 0;
+            let g = 0;
+            let b = 0;
+            if (hh >= 0 && hh < 1) {
+                r = c; g = x; b = 0;
+            } else if (hh < 2) {
+                r = x; g = c; b = 0;
+            } else if (hh < 3) {
+                r = 0; g = c; b = x;
+            } else if (hh < 4) {
+                r = 0; g = x; b = c;
+            } else if (hh < 5) {
+                r = x; g = 0; b = c;
+            } else {
+                r = c; g = 0; b = x;
+            }
+            const m = l - c / 2;
+            const toByte = (v) => Math.round((v + m) * 255);
+            return (toByte(r) << 16) | (toByte(g) << 8) | toByte(b);
+        }
+
+        function hexToInt(hex) {
+            if (!hex) return null;
+            const clean = hex.startsWith('#') ? hex.slice(1) : hex;
+            if (clean.length !== 6) return null;
+            const value = parseInt(clean, 16);
+            return Number.isNaN(value) ? null : value;
+        }
+
+        
+
+        let colorThemeWarned = false;
+
+        async function applyColorTheme(themeName, themeParams) {
+            const plugin = await getPlugin();
+            if (!plugin) return false;
+            const manager = plugin.managers?.structure?.component;
+            if (!manager?.updateRepresentationsTheme) return false;
+            try {
+                const structures = plugin.managers?.structure?.hierarchy?.current?.structures || [];
+                if (!structures.length) return false;
+                const components = structures
+                    .flatMap((structure) => structure?.components || [])
+                    .filter((component) => Array.isArray(component?.representations));
+                if (!components.length) return false;
+                await manager.updateRepresentationsTheme(components, {
+                    color: themeName || "default",
+                    colorParams: themeParams || {}
+                });
+                const colorHex = themeParams?.value !== undefined
+                    ? `#${themeParams.value.toString(16).padStart(6, '0')}`
+                    : '';
+                return true;
+            } catch (error) {
+                if (!colorThemeWarned) {
+                    console.warn('Mol* color theme update failed.', error);
+                    colorThemeWarned = true;
+                }
+                return false;
+            }
+        }
+
+        function applyColorThemeWithRetry(themeName, themeParams) {
+            let attempts = 0;
+            const attempt = async () => {
+                const ok = await applyColorTheme(themeName, themeParams);
+                if (ok || attempts > 6) return;
+                attempts += 1;
+                setTimeout(attempt, 180);
+            };
+            attempt();
+        }
+
+        function updateAxisCover(color) {
+            const cover = document.getElementById('axis-cover');
+            if (cover) cover.style.background = color || DEFAULT_BG_HEX;
+        }
+
+        async function setBackgroundColor(color) {
+            const plugin = await getPlugin();
+            if (!plugin?.canvas3d?.props) return false;
+
+            const currentProps = plugin.canvas3d.props;
+            const renderer = currentProps.renderer || {};
+
+            if (plugin.canvas3d.setProps) {
+                plugin.canvas3d.setProps({
+                    ...currentProps,
+                    renderer: { ...renderer, backgroundColor: color },
+                });
+                return true;
+            }
+
+            if (plugin.canvas3d.renderer?.setProps) {
+                plugin.canvas3d.renderer.setProps({ backgroundColor: color });
+                return true;
+            }
+
+            return false;
+        }
+
+        async function applyDefaultBackground() {
+            useExternalBg = true;
+            stopBackgroundCycle();
+            updateAxisCover(currentBgColor);
+            const desired = currentBgColor === DEFAULT_BG_HEX ? DEFAULT_BG : hexToInt(currentBgColor);
+            const targetColor = desired == null ? DEFAULT_BG : desired;
+            let tries = 0;
+            const attempt = async () => {
+                const ok = await setBackgroundColor(targetColor);
+                if (ok || tries > 40) return;
+                tries += 1;
+                setTimeout(attempt, 200);
+            };
+            attempt();
+        }
+
+        function stopBackgroundCycle() {
+            if (bgAnimation) {
+                cancelAnimationFrame(bgAnimation);
+                bgAnimation = null;
+            }
+        }
+
+        function startBackgroundCycle() {
+            if (bgAnimation || useExternalBg) return;
+            const animate = async () => {
+                const plugin = await getPlugin();
+                if (!plugin) {
+                    bgFailures += 1;
+                    bgAnimation = requestAnimationFrame(animate);
+                    return;
+                }
+                const now = performance.now();
+                if (!bgLastUpdate || now - bgLastUpdate > 50) {
+                    const hue = (now * 0.001 * bgSpeed) % 360;
+                    const color = hslToHexInt(hue, 0.9, 0.5);
+                    const ok = await setBackgroundColor(color);
+                    if (!ok) {
+                        bgFailures += 1;
+                        if (!bgWarned && bgFailures > 120) {
+                            console.warn('Mol* background color update failed after repeated attempts.');
+                            bgWarned = true;
+                        }
+                    }
+                    bgLastUpdate = now;
+                }
+                bgAnimation = requestAnimationFrame(animate);
+            };
+            bgAnimation = requestAnimationFrame(animate);
+        }
+
+        const handleForeground = (data) => {
+            if (!data) return;
+            if (data.mode === 'sequence') {
+                currentColorThemeName = "sequence-id";
+                currentColorThemeParams = {
+                    carbonColor: { name: "sequence-id", params: {} }
+                };
+                applyColorThemeWithRetry(
+                    currentColorThemeName,
+                    currentColorThemeParams
+                );
+            }
+            if (data.mode === 'uniform' && typeof data.color === 'string') {
+                const colorInt = hexToInt(data.color);
+                if (colorInt !== null) {
+                    currentColorThemeName = "uniform";
+                    currentColorThemeParams = { value: colorInt, color: colorInt };
+                    applyColorThemeWithRetry(
+                        currentColorThemeName,
+                        currentColorThemeParams
+                    );
+                }
+            }
+        };
+
+        window.__mvsSetForeground = (payload) => {
+            handleForeground(payload);
+        };
+
+        window.addEventListener('message', async (event) => {
             const data = event.data || {};
             if (data.type === 'set-structure') {
                 if (typeof data.pdb === 'string' && data.pdb.trim()) {
@@ -283,6 +527,37 @@
                     currentRepresentation = data.representation.trim();
                 }
                 reloadStory();
+            }
+            if (data.type === 'set-bg') {
+                if (data.mode === 'static' && typeof data.color === 'string') {
+                    useExternalBg = true;
+                    stopBackgroundCycle();
+                    currentBgColor = data.color === 'default' ? DEFAULT_BG_HEX : data.color;
+                    updateAxisCover(currentBgColor);
+                    reloadStory();
+                    return;
+                }
+                if (data.mode === 'hsl' && typeof data.hue === 'number') {
+                    useExternalBg = true;
+                    stopBackgroundCycle();
+                    const hue = ((data.hue % 360) + 360) % 360;
+                    const saturation = 1;
+                    const lightness = typeof data.lightness === 'number' ? data.lightness : 0.35;
+                    const color = hslToHexInt(hue, saturation, lightness);
+                    currentBgColor = `#${color.toString(16).padStart(6, '0')}`;
+                    updateAxisCover(currentBgColor);
+                    let tries = 0;
+                    const attempt = async () => {
+                        const ok = await setBackgroundColor(color);
+                        if (ok || tries > 20) return;
+                        tries += 1;
+                        setTimeout(attempt, 150);
+                    };
+                    attempt();
+                }
+            }
+            if (data.type === 'set-foreground') {
+                handleForeground(data);
             }
         });
     

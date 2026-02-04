@@ -18,8 +18,26 @@ const pendingMessages = [];
 const viewerState = {
   pdb: '1cbs',
   representation: 'cartoon',
+  background: 'default',
 };
+
+const sendForegroundToViewer = (payload) => {
+  const handler = iframe?.contentWindow?.__mvsSetForeground;
+  if (typeof handler === 'function') {
+    handler(payload);
+    return true;
+  }
+  if (iframe?.contentWindow) {
+    iframe.contentWindow.postMessage({ type: 'set-foreground', ...payload }, targetOrigin);
+    return true;
+  }
+  return false;
+};
+
 let lastBgSync = 0;
+let lastFgSync = 0;
+let lastFgMode = 'sequence';
+let lastFgColor = '';
 
 const GRADIENT_PRESETS = {
   rainbow: ['#ff004c', '#ffe600', '#00ff8a', '#00c8ff', '#6a00ff', '#ff00c8', '#ff004c'],
@@ -62,6 +80,39 @@ const hexToHsl = (hex) => {
   const l = (max + min) / 2;
   const s = delta ? delta / (1 - Math.abs(2 * l - 1)) : 0;
   return { h, s, l };
+};
+
+const hslToHex = (h, s, l) => {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hh = h / 60;
+  const x = c * (1 - Math.abs((hh % 2) - 1));
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (hh >= 0 && hh < 1) {
+    r = c;
+    g = x;
+  } else if (hh < 2) {
+    r = x;
+    g = c;
+  } else if (hh < 3) {
+    g = c;
+    b = x;
+  } else if (hh < 4) {
+    g = x;
+    b = c;
+  } else if (hh < 5) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
+  const m = l - c / 2;
+  const toByte = (v) => Math.round((v + m) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
 };
 
 const gradientAt = (presetKey, t) => {
@@ -373,6 +424,7 @@ const draw = () => {
   const audioLevel = settings.audioReactive ? audioDrive.level : 0;
   const audioPulse = settings.audioReactive ? audioDrive.pulse : 0;
   const now = performance.now() * 0.001;
+  const cycleT = (now * settings.hueSpeed) / 360;
   const breathWave = settings.breathe ? Math.sin(now * 0.9) : 0;
   const pulse =
     settings.pulse
@@ -402,6 +454,20 @@ const draw = () => {
   const audioOffsetX = Math.cos(now * 2.1) * audioDrift + Math.sin(now * 0.9) * audioOrbit;
   const audioOffsetY = Math.sin(now * 1.7) * audioDrift + Math.cos(now * 1.3) * audioOrbit;
 
+  const bgSelection = settings.backgroundGradient;
+  const bgStops = GRADIENT_PRESETS[bgSelection] || [];
+  let bgMaskColor = '#f5efe7';
+  if (bgSelection === 'black') bgMaskColor = '#000000';
+  if (bgSelection === 'white') bgMaskColor = '#ffffff';
+  if (!['default', 'black', 'white'].includes(bgSelection) && bgStops.length > 0) {
+    const bgColor = gradientAt(bgSelection, cycleT % 1);
+    if (bgColor) {
+      bgMaskColor = `hsl(${Math.round(bgColor.h)} 100% ${Math.round(
+        Math.max(0.28, Math.min(0.52, bgColor.l * 0.75 + 0.12)) * 100
+      )}%)`;
+    }
+  }
+
   let patternSource = sourceCanvas;
   if (maskCtx) {
     if (maskCanvas.width !== sourceCanvas.width || maskCanvas.height !== sourceCanvas.height) {
@@ -412,7 +478,7 @@ const draw = () => {
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     maskCtx.drawImage(sourceCanvas, 0, 0);
     const axisMaskSize = Math.round(Math.min(maskCanvas.width, maskCanvas.height) * 0.18);
-    maskCtx.fillStyle = '#f5efe7';
+    maskCtx.fillStyle = bgMaskColor;
     maskCtx.fillRect(0, maskCanvas.height - axisMaskSize, axisMaskSize, axisMaskSize);
     patternSource = maskCanvas;
   }
@@ -446,7 +512,6 @@ const draw = () => {
     }
   }
 
-  const cycleT = (now * settings.hueSpeed) / 360;
   const fgGradientKey = settings.foregroundGradient;
   const fgColor =
     fgGradientKey !== 'default'
@@ -462,21 +527,23 @@ const draw = () => {
 
   if (iframe?.contentWindow) {
     const nowMs = performance.now();
-    const bgSelection = settings.backgroundGradient;
     const animatedBg = !['default', 'black', 'white'].includes(bgSelection);
     const interval = animatedBg ? 120 : 600;
     const shouldSend = nowMs - lastBgSync > interval;
     if (shouldSend) {
       if (bgSelection === 'default') {
-        iframe.contentWindow.postMessage({ type: 'set-bg', mode: 'default' }, targetOrigin);
+        iframe.contentWindow.postMessage(
+          { type: 'set-bg', mode: 'static', color: 'default' },
+          targetOrigin
+        );
       } else if (bgSelection === 'black') {
         iframe.contentWindow.postMessage(
-          { type: 'set-bg', mode: 'hsl', hue: 0, saturation: 0, lightness: 0 },
+          { type: 'set-bg', mode: 'static', color: '#000000' },
           targetOrigin
         );
       } else if (bgSelection === 'white') {
         iframe.contentWindow.postMessage(
-          { type: 'set-bg', mode: 'hsl', hue: 0, saturation: 0, lightness: 1 },
+          { type: 'set-bg', mode: 'static', color: '#ffffff' },
           targetOrigin
         );
       } else {
@@ -487,8 +554,8 @@ const draw = () => {
               type: 'set-bg',
               mode: 'hsl',
               hue: bgColor.h,
-              saturation: bgColor.s,
-              lightness: bgColor.l,
+              saturation: 1,
+              lightness: Math.max(0.28, Math.min(0.42, bgColor.l * 0.85 + 0.12)),
             },
             targetOrigin
           );
@@ -496,32 +563,74 @@ const draw = () => {
       }
       lastBgSync = nowMs;
     }
+
+    const needsMolstarFg = ['black', 'white'].includes(bgSelection);
+    if (needsMolstarFg) {
+      if (fgGradientKey === 'default') {
+        if (lastFgMode !== 'sequence' || nowMs - lastFgSync > 800) {
+          sendForegroundToViewer({ mode: 'sequence' });
+          lastFgMode = 'sequence';
+          lastFgColor = '';
+          lastFgSync = nowMs;
+        }
+      } else if (fgColor) {
+        const fgHex = hslToHex(
+          fgColor.h,
+          Math.min(1, 0.9 + fgColor.s * 0.6),
+          Math.max(0.35, Math.min(0.6, fgColor.l * 0.8 + 0.12))
+        );
+        if (nowMs - lastFgSync > 160 || fgHex !== lastFgColor || lastFgMode !== 'uniform') {
+          sendForegroundToViewer({ mode: 'uniform', color: fgHex });
+          lastFgSync = nowMs;
+          lastFgMode = 'uniform';
+          lastFgColor = fgHex;
+        }
+      }
+    } else if (lastFgMode !== 'sequence') {
+      sendForegroundToViewer({ mode: 'sequence' });
+      lastFgMode = 'sequence';
+      lastFgColor = '';
+    }
   }
 
   ctx.save();
   ctx.globalAlpha = settings.trail ? 0.78 : 1;
   ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue}deg)`;
   ctx.drawImage(renderCanvas, 0, 0, destWidth, destHeight);
-  if (useGradient && fgColor) {
+
+  const fgStops = GRADIENT_PRESETS[fgGradientKey] || [];
+  const blockOverlay = ['black', 'white'].includes(settings.backgroundGradient);
+  const useTintGradient =
+    !blockOverlay &&
+    ((useGradient && fgStops.length > 0) ||
+      (bgStops.length > 0 && !['default'].includes(settings.backgroundGradient)));
+
+  if (useTintGradient) {
+    const gradientKey = fgStops.length > 0 ? fgGradientKey : settings.backgroundGradient;
     const gradient = ctx.createLinearGradient(0, 0, destWidth, destHeight);
-    const stops = GRADIENT_PRESETS[fgGradientKey] || [];
-    if (stops.length > 0) {
-      const t = cycleT % 1;
-      const c1 = gradientAt(fgGradientKey, t);
-      const c2 = gradientAt(fgGradientKey, (t + 0.35) % 1);
-      const c3 = gradientAt(fgGradientKey, (t + 0.7) % 1);
-      const toHsl = (c) =>
-        `hsl(${Math.round(c.h)} ${Math.round(c.s * 100)}% ${Math.round(c.l * 100)}%)`;
-      gradient.addColorStop(0, toHsl(c1));
-      gradient.addColorStop(0.55, toHsl(c2));
-      gradient.addColorStop(1, toHsl(c3));
-      ctx.globalCompositeOperation = 'color';
-      ctx.globalAlpha = 0.95;
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, destWidth, destHeight);
-      ctx.globalCompositeOperation = 'source-over';
-    }
+    const t = cycleT % 1;
+    const c1 = gradientAt(gradientKey, t);
+    const c2 = gradientAt(gradientKey, (t + 0.33) % 1);
+    const c3 = gradientAt(gradientKey, (t + 0.66) % 1);
+    const toHsl = (c) =>
+      `hsl(${Math.round(c.h)} 100% ${Math.round(
+        Math.max(0.28, Math.min(0.52, c.l * 0.75 + 0.12)) * 100
+      )}%)`;
+    gradient.addColorStop(0, toHsl(c1));
+    gradient.addColorStop(0.5, toHsl(c2));
+    gradient.addColorStop(1, toHsl(c3));
+    ctx.filter = 'none';
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, destWidth, destHeight);
+    ctx.globalCompositeOperation = 'color';
+    ctx.globalAlpha = 0.65;
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, destWidth, destHeight);
+    ctx.globalCompositeOperation = 'source-over';
   }
+
   ctx.restore();
 
   requestAnimationFrame(draw);
@@ -630,6 +739,10 @@ const bindControls = () => {
   controls.backgroundGradient?.addEventListener('change', (event) => {
     settings.backgroundGradient = event.target.value;
     lastBgSync = 0;
+    if (['black', 'white', 'default'].includes(settings.backgroundGradient)) {
+      viewerState.background = settings.backgroundGradient;
+      reloadViewer();
+    }
   });
 
   controls.pulse.addEventListener('change', (event) => {
@@ -657,6 +770,9 @@ const bindControls = () => {
     const url = new URL(iframe.getAttribute('src') || 'story/viewer.html', window.location.href);
     url.searchParams.set('pdb', viewerState.pdb);
     url.searchParams.set('rep', viewerState.representation);
+    if (viewerState.background) {
+      url.searchParams.set('bg', viewerState.background);
+    }
     url.searchParams.set('t', String(Date.now()));
     iframe.src = url.toString();
   };
