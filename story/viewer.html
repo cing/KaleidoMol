@@ -146,6 +146,8 @@
 
         const buildMvsData = (pdbId, representationType) => {
             const representationParams = normalizeRepresentation(representationType);
+            const colorThemeName = currentColorThemeName;
+            const colorThemeParams = currentColorThemeParams;
             return ({
             kind: "multiple",
             metadata: {
@@ -203,8 +205,8 @@
                                                                         kind: "color",
                                                                         params: {},
                                                                         custom: {
-                                                                            molstar_color_theme_name: currentColorThemeName,
-                                                                            molstar_color_theme_params: currentColorThemeParams
+                                                                            molstar_color_theme_name: colorThemeName,
+                                                                            molstar_color_theme_params: colorThemeParams
                                                                         }
                                                                     }
                                                                 ]
@@ -258,6 +260,9 @@
         let currentRepresentation = queryParams.get("rep") || "cartoon";
         const initialBg = (queryParams.get("bg") || "default").toLowerCase();
         let illustrativeEnabled = queryParams.get("illustrative") === "1";
+        let illustrativeApplied = false;
+        let basePostprocessing = null;
+        let baseIgnoreLight = null;
         const DEFAULT_BG_HEX = "#f5efe7";
         const DEFAULT_BG_INT = 0xf5efe7;
         let currentBgColor = DEFAULT_BG_HEX;
@@ -313,6 +318,7 @@
             tryDisableAxes();
             applyDefaultBackground();
             loadToken += 1;
+            illustrativeApplied = false;
             waitForStructureReady(loadToken);
         };
 
@@ -334,6 +340,101 @@
                 pluginCache = ctx?.state?.viewers?.value?.[0]?.model?.plugin || null;
             }
             return pluginCache;
+        }
+
+        const clonePostprocessing = (value) => {
+            if (!value) return null;
+            if (typeof structuredClone === 'function') {
+                try {
+                    return structuredClone(value);
+                } catch (error) {
+                    /* noop */
+                }
+            }
+            try {
+                return JSON.parse(JSON.stringify(value));
+            } catch (error) {
+                return value;
+            }
+        };
+
+        async function applyIllustrativeStyle(enabled) {
+            const plugin = await getPlugin();
+            if (!plugin) return false;
+            const manager = plugin.managers?.structure?.component;
+            if (!manager) return false;
+
+            if (baseIgnoreLight === null) {
+                baseIgnoreLight = manager.state?.options?.ignoreLight ?? false;
+            }
+            if (!basePostprocessing && plugin.canvas3d?.props?.postprocessing) {
+                basePostprocessing = clonePostprocessing(plugin.canvas3d.props.postprocessing);
+            }
+
+            if (enabled) {
+                try {
+                    if (manager.state?.options) {
+                        await manager.setOptions({
+                            ...manager.state.options,
+                            ignoreLight: true,
+                        });
+                    }
+                } catch (error) {
+                    /* noop */
+                }
+                const canvas3d = plugin.canvas3d;
+                if (canvas3d?.setProps) {
+                    canvas3d.setProps({
+                        postprocessing: {
+                            outline: {
+                                name: 'on',
+                                params: {
+                                    scale: 1,
+                                    color: 0x000000,
+                                    threshold: 0.25,
+                                    includeTransparent: true,
+                                },
+                            },
+                            occlusion: {
+                                name: 'on',
+                                params: {
+                                    multiScale: { name: 'off', params: {} },
+                                    radius: 5,
+                                    bias: 0.8,
+                                    blurKernelSize: 15,
+                                    blurDepthBias: 0.5,
+                                    samples: 32,
+                                    resolutionScale: 1,
+                                    color: 0x000000,
+                                    transparentThreshold: 0.4,
+                                },
+                            },
+                            shadow: { name: 'off', params: {} },
+                        },
+                    });
+                }
+                illustrativeApplied = true;
+                return true;
+            }
+
+            try {
+                if (manager.state?.options) {
+                    await manager.setOptions({
+                        ...manager.state.options,
+                        ignoreLight: baseIgnoreLight ?? false,
+                    });
+                }
+            } catch (error) {
+                /* noop */
+            }
+            const canvas3d = plugin.canvas3d;
+            if (canvas3d?.setProps && basePostprocessing) {
+                canvas3d.setProps({
+                    postprocessing: clonePostprocessing(basePostprocessing),
+                });
+            }
+            illustrativeApplied = false;
+            return true;
         }
 
         function hslToHexInt(h, s, l) {
@@ -373,17 +474,28 @@
 
         let colorThemeWarned = false;
 
+        function getStructureComponents(plugin) {
+            const structures = plugin?.managers?.structure?.hierarchy?.current?.structures || [];
+            const components = structures
+                .flatMap((structure) => {
+                    const items = structure?.components;
+                    if (!items) return [];
+                    return Array.isArray(items) ? items : Array.from(items);
+                })
+                .filter((component) => {
+                    const reps = component?.representations;
+                    return reps && typeof reps[Symbol.iterator] === 'function';
+                });
+            return components;
+        }
+
         async function applyColorTheme(themeName, themeParams) {
             const plugin = await getPlugin();
             if (!plugin) return false;
             const manager = plugin.managers?.structure?.component;
             if (!manager?.updateRepresentationsTheme) return false;
             try {
-                const structures = plugin.managers?.structure?.hierarchy?.current?.structures || [];
-                if (!structures.length) return false;
-                const components = structures
-                    .flatMap((structure) => structure?.components || [])
-                    .filter((component) => Array.isArray(component?.representations));
+                const components = getStructureComponents(plugin);
                 if (!components.length) return false;
                 await manager.updateRepresentationsTheme(components, {
                     color: themeName || "default",
@@ -400,10 +512,6 @@
         }
 
         function applyActiveTheme() {
-            if (illustrativeEnabled) {
-                applyColorThemeWithRetry("illustrative", {});
-                return;
-            }
             applyColorThemeWithRetry(currentColorThemeName, currentColorThemeParams);
         }
 
@@ -502,11 +610,13 @@
             const plugin = await getPlugin();
             const structures = plugin?.managers?.structure?.hierarchy?.current?.structures || [];
             if (structures.length) {
-                window.parent?.postMessage(
-                    { type: 'structure-loaded', pdb: currentPdb },
-                    '*'
-                );
                 applyActiveTheme();
+                if (illustrativeEnabled && !illustrativeApplied) {
+                    applyIllustrativeStyle(true);
+                }
+                if (!illustrativeEnabled && illustrativeApplied) {
+                    applyIllustrativeStyle(false);
+                }
                 return;
             }
             setTimeout(() => waitForStructureReady(token), 200);
@@ -536,8 +646,11 @@
         };
 
         const handleIllustrative = (enabled) => {
-            illustrativeEnabled = Boolean(enabled);
-            applyActiveTheme();
+            const next = Boolean(enabled);
+            if (next === illustrativeEnabled) return;
+            illustrativeEnabled = next;
+            applyIllustrativeStyle(illustrativeEnabled);
+            waitForStructureReady(loadToken);
         };
 
         window.addEventListener('message', async (event) => {
@@ -557,7 +670,7 @@
                     stopBackgroundCycle();
                     currentBgColor = data.color === 'default' ? DEFAULT_BG_HEX : data.color;
                     updateAxisCover(currentBgColor);
-                    reloadStory();
+                    applyDefaultBackground();
                     return;
                 }
                 if (data.mode === 'hsl' && typeof data.hue === 'number') {

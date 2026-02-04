@@ -39,6 +39,8 @@ let lastBgSync = 0;
 let lastFgSync = 0;
 let lastFgMode = 'sequence';
 let lastFgColor = '';
+let lastBgMode = '';
+let lastBgValue = '';
 
 const GRADIENT_PRESETS = {
   rainbow: ['#ff004c', '#ffe600', '#00ff8a', '#00c8ff', '#6a00ff', '#ff00c8', '#ff004c'],
@@ -529,25 +531,37 @@ const draw = () => {
 
   if (iframe?.contentWindow) {
     const nowMs = performance.now();
-    const animatedBg = !['default', 'black', 'white'].includes(bgSelection);
-    const interval = animatedBg ? 120 : 600;
+    const isStaticBg = ['default', 'black', 'white'].includes(bgSelection);
+    const interval = isStaticBg ? 600 : 120;
     const shouldSend = nowMs - lastBgSync > interval;
     if (shouldSend) {
       if (bgSelection === 'default') {
-        iframe.contentWindow.postMessage(
-          { type: 'set-bg', mode: 'static', color: 'default' },
-          targetOrigin
-        );
+        if (lastBgMode !== 'static' || lastBgValue !== 'default') {
+          iframe.contentWindow.postMessage(
+            { type: 'set-bg', mode: 'static', color: 'default' },
+            targetOrigin
+          );
+          lastBgMode = 'static';
+          lastBgValue = 'default';
+        }
       } else if (bgSelection === 'black') {
-        iframe.contentWindow.postMessage(
-          { type: 'set-bg', mode: 'static', color: '#000000' },
-          targetOrigin
-        );
+        if (lastBgMode !== 'static' || lastBgValue !== '#000000') {
+          iframe.contentWindow.postMessage(
+            { type: 'set-bg', mode: 'static', color: '#000000' },
+            targetOrigin
+          );
+          lastBgMode = 'static';
+          lastBgValue = '#000000';
+        }
       } else if (bgSelection === 'white') {
-        iframe.contentWindow.postMessage(
-          { type: 'set-bg', mode: 'static', color: '#ffffff' },
-          targetOrigin
-        );
+        if (lastBgMode !== 'static' || lastBgValue !== '#ffffff') {
+          iframe.contentWindow.postMessage(
+            { type: 'set-bg', mode: 'static', color: '#ffffff' },
+            targetOrigin
+          );
+          lastBgMode = 'static';
+          lastBgValue = '#ffffff';
+        }
       } else {
         const bgColor = gradientAt(bgSelection, cycleT % 1);
         if (bgColor) {
@@ -561,6 +575,8 @@ const draw = () => {
             },
             targetOrigin
           );
+          lastBgMode = 'hsl';
+          lastBgValue = bgSelection;
         }
       }
       lastBgSync = nowMs;
@@ -669,36 +685,6 @@ const controls = {
   representationRadios: document.querySelectorAll('input[name=\"representation\"]'),
 };
 
-const pdbInputWrap = controls.pdbInput?.closest('.control-input');
-let pdbLoadingTimeout = null;
-
-const setPdbLoading = (active) => {
-  if (!pdbInputWrap) return;
-  pdbInputWrap.classList.toggle('is-loading', active);
-  if (!active) return;
-  pdbInputWrap.classList.remove('is-loaded');
-};
-
-const completePdbLoading = () => {
-  if (!pdbInputWrap) return;
-  pdbInputWrap.classList.remove('is-loading');
-  pdbInputWrap.classList.add('is-loaded');
-  setTimeout(() => {
-    pdbInputWrap.classList.remove('is-loaded');
-  }, 600);
-};
-
-window.addEventListener('message', (event) => {
-  const data = event.data || {};
-  if (data.type === 'structure-loaded') {
-    if (!viewerState.pdb || data.pdb !== viewerState.pdb) return;
-    if (pdbLoadingTimeout) {
-      clearTimeout(pdbLoadingTimeout);
-      pdbLoadingTimeout = null;
-    }
-    completePdbLoading();
-  }
-});
 
 const setBodyClass = (name, enabled) => {
   document.body.classList.toggle(name, enabled);
@@ -834,11 +820,6 @@ const bindControls = () => {
     if (!sanitized) return;
     controls.pdbInput.value = sanitized;
     viewerState.pdb = sanitized;
-    setPdbLoading(true);
-    if (pdbLoadingTimeout) clearTimeout(pdbLoadingTimeout);
-    pdbLoadingTimeout = setTimeout(() => {
-      setPdbLoading(false);
-    }, 15000);
     sendToViewer({
       type: 'set-structure',
       pdb: viewerState.pdb,
@@ -979,11 +960,7 @@ const bindControls = () => {
 
     setBodyClass('glow-off', false);
     stopAudio();
-    if (pdbLoadingTimeout) {
-      clearTimeout(pdbLoadingTimeout);
-      pdbLoadingTimeout = null;
-    }
-    setPdbLoading(false);
+    
 
     syncSlider(controls.slices, controls.slicesValue);
     syncSlider(controls.zoom, controls.zoomValue, (v) => Number(v).toFixed(2));
