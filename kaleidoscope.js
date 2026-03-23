@@ -155,7 +155,6 @@ const settings = {
   drift: true,
   foregroundGradient: 'default',
   backgroundGradient: 'default',
-  breathe: false,
   doubleLayer: false,
   trail: false,
   trailFade: 0.008,
@@ -430,20 +429,16 @@ const draw = () => {
   const audioPulse = settings.audioReactive ? audioDrive.pulse : 0;
   const now = performance.now() * 0.001;
   const cycleT = (now * settings.hueSpeed) / 360;
-  const breathWave = settings.breathe ? Math.sin(now * 0.9) : 0;
   const pulse =
     settings.pulse
       ? Math.sin(performance.now() * 0.001 * settings.pulseSpeed) *
         settings.pulseAmount
       : 0;
 
-  const dynamicSlices = Math.max(
-    6,
-    Math.round(settings.slices + breathWave * 5)
-  );
+  const dynamicSlices = settings.slices;
   const dynamicZoom =
     settings.baseZoom *
-    (1 + pulse + breathWave * 0.08 + audioLevel * 0.35 + audioPulse * 0.6);
+    (1 + pulse + audioLevel * 0.35 + audioPulse * 0.6);
   const dynamicSpeed = settings.rotationSpeed + audioPulse * 0.03 + audioLevel * 0.006;
 
   if (settings.spin) {
@@ -675,7 +670,6 @@ const controls = {
   glow: document.getElementById('toggle-glow'),
   illustrative: document.getElementById('toggle-illustrative'),
   audio: document.getElementById('toggle-audio'),
-  breathe: document.getElementById('toggle-breathe'),
   doubleLayer: document.getElementById('toggle-double'),
   trail: document.getElementById('toggle-trail'),
   togglePanel: document.getElementById('controls-toggle'),
@@ -711,7 +705,6 @@ const bindControls = () => {
   settings.backgroundGradient = controls.backgroundGradient?.value || 'default';
   settings.pulse = controls.pulse.checked;
   settings.drift = controls.drift.checked;
-  settings.breathe = controls.breathe.checked;
   settings.doubleLayer = controls.doubleLayer.checked;
   settings.trail = controls.trail.checked;
   settings.illustrative = controls.illustrative?.checked || false;
@@ -889,10 +882,6 @@ const bindControls = () => {
     }
   });
 
-  controls.breathe.addEventListener('change', (event) => {
-    settings.breathe = event.target.checked;
-  });
-
   controls.doubleLayer.addEventListener('change', (event) => {
     settings.doubleLayer = event.target.checked;
   });
@@ -927,7 +916,6 @@ const bindControls = () => {
     settings.drift = true;
     settings.foregroundGradient = 'default';
     settings.backgroundGradient = 'default';
-    settings.breathe = false;
     settings.doubleLayer = false;
     settings.trail = false;
     settings.audioReactive = false;
@@ -951,7 +939,6 @@ const bindControls = () => {
       controls.illustrative.checked = false;
     }
     controls.audio.checked = false;
-    controls.breathe.checked = false;
     controls.doubleLayer.checked = false;
     controls.trail.checked = false;
     controls.pdbInput.value = '1cbs';
