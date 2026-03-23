@@ -181,7 +181,7 @@ const audioDrive = {
 const resize = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = 1;
 
   canvas.width = width * dpr;
   canvas.height = height * dpr;
@@ -227,8 +227,8 @@ window.addEventListener('pointermove', (event) => {
   const ny = event.clientY / window.innerHeight - 0.5;
   settings.targetRotation = Math.atan2(ny, nx);
   if (!settings.drift) return;
-  settings.targetX = nx * settings.radius * 0.9;
-  settings.targetY = ny * settings.radius * 0.9;
+  settings.targetX = nx * settings.radius * 0.3;
+  settings.targetY = ny * settings.radius * 0.3;
 });
 
 const ensureEssentia = async () => {
@@ -365,11 +365,12 @@ const renderLayer = (targetCtx, options) => {
       targetCtx.scale(-1, 1);
     }
 
-    targetCtx.translate(
-      offsetX - patternSource.width / 2,
-      offsetY - patternSource.height / 2
-    );
+    targetCtx.translate(offsetX, offsetY);
     targetCtx.rotate(rotation);
+    targetCtx.translate(
+      -patternSource.width / 2,
+      -patternSource.height / 2
+    );
     targetCtx.fillStyle = pattern;
     targetCtx.fill();
 
