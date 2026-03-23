@@ -6,6 +6,9 @@ const maskCtx = maskCanvas.getContext('2d');
 const renderCanvas = document.createElement('canvas');
 const renderCtx = renderCanvas.getContext('2d');
 
+const trailHistory = [];
+const TRAIL_HISTORY_SIZE = 20;
+
 const stats = {
   fpsEl: document.getElementById('stats-fps'),
   memEl: document.getElementById('stats-mem'),
@@ -479,6 +482,19 @@ const draw = () => {
     patternSource = maskCanvas;
   }
 
+  const currentOffsetX = settings.offsetX + audioOffsetX;
+  const currentOffsetY = settings.offsetY + audioOffsetY;
+
+  trailHistory.push({
+    rotation: settings.rotation,
+    zoom: dynamicZoom,
+    offsetX: currentOffsetX,
+    offsetY: currentOffsetY,
+  });
+  if (trailHistory.length > TRAIL_HISTORY_SIZE) {
+    trailHistory.shift();
+  }
+
   if (renderCtx) {
     renderCtx.clearRect(0, 0, width, height);
 
@@ -486,25 +502,26 @@ const draw = () => {
       slices: dynamicSlices,
       zoom: dynamicZoom,
       rotation: settings.rotation,
-      offsetX: settings.offsetX + audioOffsetX,
-      offsetY: settings.offsetY + audioOffsetY,
+      offsetX: currentOffsetX,
+      offsetY: currentOffsetY,
       mirror: settings.mirror,
       patternSource,
     });
 
-    if (settings.trail) {
+    if (settings.trail && trailHistory.length > 1) {
       const trailCopies = 3;
-      const rotStep = 0.06;
+      const len = trailHistory.length;
       for (let i = 1; i <= trailCopies; i++) {
+        const histIdx = Math.max(0, len - 1 - i * 5);
+        const past = trailHistory[histIdx];
         renderCtx.save();
-        renderCtx.globalCompositeOperation = 'screen';
-        renderCtx.globalAlpha = 0.5 / i;
+        renderCtx.globalAlpha = 0.35 / i;
         renderLayer(renderCtx, {
           slices: dynamicSlices,
-          zoom: dynamicZoom * (1 + i * 0.04),
-          rotation: settings.rotation - rotStep * i,
-          offsetX: settings.offsetX + audioOffsetX,
-          offsetY: settings.offsetY + audioOffsetY,
+          zoom: past.zoom * (1 + i * 0.04),
+          rotation: past.rotation,
+          offsetX: past.offsetX,
+          offsetY: past.offsetY,
           mirror: settings.mirror,
           patternSource,
         });
