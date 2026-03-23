@@ -162,7 +162,7 @@ const settings = {
   backgroundGradient: 'default',
   doubleLayer: false,
   trail: false,
-  glow: true,
+  glow: false,
   reflect: false,
   audioReactive: false,
   hueSpeed: 36,
@@ -1071,7 +1071,7 @@ const bindControls = () => {
     }
     controls.pulse.checked = false;
     controls.drift.checked = true;
-    controls.glow.checked = true;
+    controls.glow.checked = false;
     if (controls.illustrative) {
       controls.illustrative.checked = false;
     }
