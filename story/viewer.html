@@ -692,6 +692,79 @@
                     attempt();
                 }
             }
+            if (data.type === 'load-file') {
+                const fileData = data.binary
+                    ? new Blob([new Uint8Array(data.data)])
+                    : new Blob([data.data], { type: 'text/plain' });
+                const blobUrl = URL.createObjectURL(fileData);
+                const fmt = data.format || 'pdb';
+                const parseFormat = fmt === 'mmcif' ? 'mmcif' : fmt === 'bcif' ? 'bcif' : 'pdb';
+                const representationParams = normalizeRepresentation(currentRepresentation);
+                const colorThemeName = currentColorThemeName;
+                const colorThemeParams = currentColorThemeParams;
+                const mvsData = {
+                    kind: "multiple",
+                    metadata: { title: "User Upload", timestamp: new Date().toISOString(), version: "1" },
+                    snapshots: [{
+                        root: {
+                            kind: "root",
+                            children: [
+                                {
+                                    kind: "canvas",
+                                    params: { background_color: currentBgColor },
+                                    custom: {
+                                        molstar_postprocessing: {
+                                            enable_ssao: true,
+                                            ssao_params: { samples: 32, radius: 5, bias: 1, blurKernelSize: 11, blurDepthBias: 0.5, resolutionScale: 1, color: "0x000000", transparentThreshold: 0.4 }
+                                        }
+                                    }
+                                },
+                                {
+                                    kind: "download",
+                                    params: { url: blobUrl },
+                                    children: [{
+                                        kind: "parse",
+                                        params: { format: parseFormat },
+                                        children: [{
+                                            kind: "structure",
+                                            params: { type: "model" },
+                                            children: [
+                                                {
+                                                    kind: "component",
+                                                    params: { selector: "polymer" },
+                                                    children: [
+                                                        {
+                                                            kind: "representation",
+                                                            params: representationParams,
+                                                            children: [{ kind: "color", params: {}, custom: { molstar_color_theme_name: colorThemeName, molstar_color_theme_params: colorThemeParams } }]
+                                                        },
+                                                        { kind: "focus", params: { direction: [1, 0.6, 1.2], up: [0, 1, 0], radius_factor: 1.25, radius_extent: 5 } }
+                                                    ]
+                                                },
+                                                {
+                                                    kind: "component",
+                                                    params: { selector: "ligand" },
+                                                    children: [{ kind: "representation", params: { type: "ball_and_stick" }, children: [{ kind: "color", params: { color: "#d07a37" } }] }]
+                                                }
+                                            ]
+                                        }]
+                                    }]
+                                }
+                            ]
+                        },
+                        metadata: { key: "upload", title: "User Upload", linger_duration_ms: 12000, transition_duration_ms: 800 }
+                    }]
+                };
+                mvsStories.loadFromData(mvsData, { format: 'mvsj' });
+                pluginCache = null;
+                bgFailures = 0;
+                bgWarned = false;
+                tryDisableAxes();
+                applyDefaultBackground();
+                loadToken += 1;
+                illustrativeApplied = false;
+                waitForStructureReady(loadToken);
+            }
             if (data.type === 'set-foreground') {
                 handleForeground(data);
             }

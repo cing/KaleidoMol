@@ -20,7 +20,6 @@
           >
             hide
           </button>
-          <button class="reset" type="button" id="control-reset">Reset</button>
         </div>
         <div class="panel-title">
           <p class="name">KaleidoMol</p>
@@ -30,47 +29,8 @@
 
       <div class="control-panel" role="group" aria-label="Kaleidoscope controls">
 
-        <div class="control-sliders">
-          <label class="control-row" for="control-slices">
-            <span>Slices</span>
-            <input
-              id="control-slices"
-              type="range"
-              min="8"
-              max="36"
-              step="1"
-              value="20"
-            />
-            <span class="value" id="control-slices-value">20</span>
-          </label>
-          <label class="control-row" for="control-zoom">
-            <span>Zoom</span>
-            <input
-              id="control-zoom"
-              type="range"
-              min="1.0"
-              max="3.0"
-              step="0.05"
-              value="1.9"
-            />
-            <span class="value" id="control-zoom-value">1.90</span>
-          </label>
-          <label class="control-row" for="control-speed">
-            <span>Spin</span>
-            <input
-              id="control-speed"
-              type="range"
-              min="0"
-              max="0.01"
-              step="0.0005"
-              value="0.0015"
-            />
-            <span class="value" id="control-speed-value">0.0015</span>
-          </label>
-        </div>
-
+        <span class="section-label">Structure</span>
         <div class="control-field">
-          <label for="control-pdb">PDB code</label>
           <div class="control-input">
             <input
               id="control-pdb"
@@ -79,14 +39,16 @@
               maxlength="6"
               spellcheck="false"
               autocomplete="off"
+              placeholder="PDB code"
             />
             <button class="mini-button" type="button" id="control-pdb-load">
               Load
             </button>
-            <button class="mini-button icon-button" type="button" id="control-save" aria-label="Save PNG">
-              <span aria-hidden="true">💾</span>
+            <button class="mini-button" type="button" id="control-pdb-browse">
+              Browse
             </button>
           </div>
+          <input type="file" id="control-pdb-file" accept=".pdb,.cif,.mmcif,.bcif,.ent" hidden />
         </div>
 
         <div
@@ -124,6 +86,98 @@
           </label>
         </div>
 
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="toggle-illustrative" type="checkbox" />
+            <span>Illustrative</span>
+          </label>
+        </div>
+
+        <span class="section-label">Pattern</span>
+        <div class="control-sliders">
+          <label class="control-row" for="control-slices">
+            <span>Slices</span>
+            <input
+              id="control-slices"
+              type="range"
+              min="8"
+              max="36"
+              step="1"
+              value="20"
+            />
+            <span class="value" id="control-slices-value">20</span>
+          </label>
+          <label class="control-row" for="control-zoom">
+            <span>Zoom</span>
+            <input
+              id="control-zoom"
+              type="range"
+              min="1.0"
+              max="3.0"
+              step="0.05"
+              value="1.9"
+            />
+            <span class="value" id="control-zoom-value">1.90</span>
+          </label>
+        </div>
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="toggle-mirror" type="checkbox" checked />
+            <span>Mirror</span>
+          </label>
+        </div>
+
+        <span class="section-label">Motion</span>
+        <div class="control-sliders">
+          <label class="control-row" for="control-speed">
+            <span>Spin</span>
+            <input
+              id="control-speed"
+              type="range"
+              min="0"
+              max="0.01"
+              step="0.0005"
+              value="0.0015"
+            />
+            <span class="value" id="control-speed-value">0.0015</span>
+          </label>
+        </div>
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="toggle-spin" type="checkbox" checked />
+            <span>Auto spin</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-drift" type="checkbox" checked />
+            <span>Drift</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-pulse" type="checkbox" />
+            <span>Pulse</span>
+          </label>
+        </div>
+
+        <span class="section-label">Effects</span>
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="toggle-glow" type="checkbox" checked />
+            <span>Glow</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-trail" type="checkbox" />
+            <span>Trails</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-double" type="checkbox" />
+            <span>Double layer</span>
+          </label>
+          <label class="toggle">
+            <input id="toggle-audio" type="checkbox" />
+            <span>Audio Drive</span>
+          </label>
+        </div>
+
+        <span class="section-label">Color</span>
         <div class="gradient-controls">
           <label class="gradient-control">
             <span>Foreground</span>
@@ -161,52 +215,11 @@
           </label>
         </div>
 
-        <div class="control-field quick-styles">
-          <label>Quick styles</label>
-          <div class="toggle-grid">
-            <label class="toggle">
-              <input id="toggle-illustrative" type="checkbox" />
-              <span>Illustrative</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="toggle-grid">
-          <label class="toggle">
-            <input id="toggle-mirror" type="checkbox" checked />
-            <span>Mirror</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-spin" type="checkbox" checked />
-            <span>Auto spin</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-pulse" type="checkbox" />
-            <span>Pulse</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-drift" type="checkbox" checked />
-            <span>Drift</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-glow" type="checkbox" checked />
-            <span>Glow</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-audio" type="checkbox" />
-            <span>Audio Drive</span>
-          </label>
-<label class="toggle">
-            <input id="toggle-double" type="checkbox" />
-            <span>Double layer</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-trail" type="checkbox" />
-            <span>Trails</span>
-          </label>
-        </div>
-
         <div class="panel-stats" aria-live="polite">
+          <button class="mini-button icon-button" type="button" id="control-save" aria-label="Save PNG">
+            <span aria-hidden="true">📷</span>
+          </button>
+          <button class="mini-button" type="button" id="control-reset">Reset</button>
           <span id="stats-fps">FPS --</span>
           <span id="stats-mem">MEM --</span>
         </div>

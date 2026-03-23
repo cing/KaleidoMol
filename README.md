@@ -4,11 +4,11 @@ A kaleidoscopic protein structure viewer. Enter any PDB code and watch the molec
 
 **[Live demo](https://cing.github.io/KaleidoMol/)**
 
-![KaleidoMol screenshot](https://github.com/user-attachments/assets/placeholder.png)
+![KaleidoMol screenshot](assets/kaleidoscope.png)
 
 ## Features
 
-- Load any protein from the PDB by code (e.g. `1cbs`, `4hhb`)
+- Load any protein from the PDB by code (e.g. `1cbs`, `4hhb`) or browse a local PDB/CIF file
 - Cartoon, spacefill, and molecular surface representations
 - Interactive drift — mouse position shifts the pattern within the kaleidoscope
 - Adjustable slices, zoom, and spin speed
@@ -17,6 +17,27 @@ A kaleidoscopic protein structure viewer. Enter any PDB code and watch the molec
 - Audio-reactive mode via microphone (Essentia.js)
 - Illustrative rendering toggle
 - PNG export
+
+## Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| `f` | Cycle foreground gradient |
+| `b` | Cycle background gradient |
+| `r` | Cycle representation (cartoon / spacefill / surface) |
+| `m` | Toggle mirror |
+| `s` | Toggle auto spin |
+| `p` | Toggle pulse |
+| `d` | Toggle drift |
+| `g` | Toggle glow |
+| `i` | Toggle illustrative |
+| `l` | Toggle double layer |
+| `t` | Toggle trails |
+| `h` | Hide / show controls |
+| `x` | Save PNG snapshot |
+| `[` / `]` | Decrease / increase slices |
+| `↑` / `↓` | Increase / decrease zoom |
+| `←` / `→` | Decrease / increase spin speed |
 
 ## How it works
 

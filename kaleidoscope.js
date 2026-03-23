@@ -5,6 +5,8 @@ const maskCanvas = document.createElement('canvas');
 const maskCtx = maskCanvas.getContext('2d');
 const renderCanvas = document.createElement('canvas');
 const renderCtx = renderCanvas.getContext('2d');
+const bloomCanvas = document.createElement('canvas');
+const bloomCtx = bloomCanvas.getContext('2d');
 
 const trailHistory = [];
 const TRAIL_HISTORY_SIZE = 20;
@@ -160,6 +162,7 @@ const settings = {
   backgroundGradient: 'default',
   doubleLayer: false,
   trail: false,
+  glow: true,
   audioReactive: false,
   hueSpeed: 36,
   illustrative: false,
@@ -196,6 +199,8 @@ const resize = () => {
   renderCanvas.height = height * dpr;
   renderCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+  bloomCanvas.width = Math.ceil(width * 0.25);
+  bloomCanvas.height = Math.ceil(height * 0.25);
 };
 
 const findSourceCanvas = () => {
@@ -679,6 +684,33 @@ const draw = () => {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+  if (settings.glow && bloomCtx) {
+    const bw = bloomCanvas.width;
+    const bh = bloomCanvas.height;
+    bloomCtx.clearRect(0, 0, bw, bh);
+    bloomCtx.filter = 'blur(8px) brightness(1.6) saturate(1.4)';
+    bloomCtx.drawImage(canvas, 0, 0, bw, bh);
+    bloomCtx.filter = 'none';
+
+    const darkBg = ['black', 'moonlit-asteroid'].includes(settings.backgroundGradient);
+    const blendMode = darkBg ? 'screen' : 'multiply';
+
+    ctx.filter = 'none';
+    ctx.globalCompositeOperation = blendMode;
+    ctx.globalAlpha = 0.7;
+    const s1 = 1.12;
+    ctx.drawImage(bloomCanvas,
+      destWidth * (1 - s1) * 0.5, destHeight * (1 - s1) * 0.5,
+      destWidth * s1, destHeight * s1);
+    ctx.globalAlpha = 0.5;
+    const s2 = 1.25;
+    ctx.drawImage(bloomCanvas,
+      destWidth * (1 - s2) * 0.5, destHeight * (1 - s2) * 0.5,
+      destWidth * s2, destHeight * s2);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
   ctx.restore();
 
   requestAnimationFrame(draw);
@@ -710,6 +742,8 @@ const controls = {
   reset: document.getElementById('control-reset'),
   pdbInput: document.getElementById('control-pdb'),
   pdbLoad: document.getElementById('control-pdb-load'),
+  pdbBrowse: document.getElementById('control-pdb-browse'),
+  pdbFile: document.getElementById('control-pdb-file'),
   save: document.getElementById('control-save'),
   representationRadios: document.querySelectorAll('input[name=\"representation\"]'),
 };
@@ -727,8 +761,6 @@ const syncSlider = (slider, output, format) => {
 
 const bindControls = () => {
   if (!controls.slices) return;
-
-  setBodyClass('glow-off', false);
 
   settings.slices = Number(controls.slices.value);
   settings.baseZoom = Number(controls.zoom.value);
@@ -804,7 +836,7 @@ const bindControls = () => {
   });
 
   controls.glow.addEventListener('change', (event) => {
-    setBodyClass('glow-off', !event.target.checked);
+    settings.glow = event.target.checked;
   });
 
   controls.illustrative?.addEventListener('change', (event) => {
@@ -862,6 +894,46 @@ const bindControls = () => {
       event.preventDefault();
       applyStructure();
     }
+  });
+
+  controls.pdbBrowse?.addEventListener('click', () => {
+    controls.pdbFile?.click();
+  });
+
+  controls.pdbFile?.addEventListener('change', () => {
+    const file = controls.pdbFile.files?.[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    let format = 'pdb';
+    if (name.endsWith('.cif') || name.endsWith('.mmcif')) format = 'mmcif';
+    if (name.endsWith('.bcif')) format = 'bcif';
+
+    const reader = new FileReader();
+    if (format === 'bcif') {
+      reader.onload = () => {
+        const arr = new Uint8Array(reader.result);
+        sendToViewer({
+          type: 'load-file',
+          data: Array.from(arr),
+          format,
+          binary: true,
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = () => {
+        sendToViewer({
+          type: 'load-file',
+          data: reader.result,
+          format,
+          binary: false,
+        });
+      };
+      reader.readAsText(file);
+    }
+    const label = file.name.replace(/\.[^.]+$/, '').slice(0, 6);
+    controls.pdbInput.value = label;
+    controls.pdbFile.value = '';
   });
 
   controls.save?.addEventListener('click', () => {
@@ -980,9 +1052,7 @@ const bindControls = () => {
       radio.checked = radio.value === 'cartoon';
     });
 
-    setBodyClass('glow-off', false);
     stopAudio();
-    
 
     syncSlider(controls.slices, controls.slicesValue);
     syncSlider(controls.zoom, controls.zoomValue, (v) => Number(v).toFixed(2));
@@ -1053,7 +1123,7 @@ const bindControls = () => {
       case 'f': cycleSelect(controls.foregroundGradient, 'foregroundGradient'); break;
       case 'b': cycleSelect(controls.backgroundGradient, 'backgroundGradient', () => {
         lastBgSync = 0;
-        if (['black', 'white', 'default'].includes(settings.backgroundGradient)) {
+            if (['black', 'white', 'default'].includes(settings.backgroundGradient)) {
           viewerState.background = settings.backgroundGradient;
           reloadViewer();
         }
@@ -1063,7 +1133,7 @@ const bindControls = () => {
       case 's': toggleCheck(controls.spin, 'spin'); break;
       case 'p': toggleCheck(controls.pulse, 'pulse'); break;
       case 'd': toggleCheck(controls.drift, 'drift'); break;
-      case 'g': toggleCheck(controls.glow, 'glow', (on) => setBodyClass('glow-off', !on)); break;
+      case 'g': toggleCheck(controls.glow, 'glow'); break;
       case 'i': toggleCheck(controls.illustrative, 'illustrative', (on) => {
         viewerState.illustrative = on;
         sendToViewer({ type: 'set-illustrative', enabled: on });
@@ -1080,6 +1150,7 @@ const bindControls = () => {
       case 'ArrowLeft': nudgeSlider(controls.speed, controls.speedValue, 'rotationSpeed', -1, (v) => Number(v).toFixed(4)); break;
       case ']': nudgeSlider(controls.slices, controls.slicesValue, 'slices', 1); break;
       case '[': nudgeSlider(controls.slices, controls.slicesValue, 'slices', -1); break;
+      case 'x': controls.save?.click(); break;
       default: return;
     }
     event.preventDefault();

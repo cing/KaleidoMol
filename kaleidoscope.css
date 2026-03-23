@@ -25,47 +25,6 @@ body {
   color: var(--ink);
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: -20%;
-  background: conic-gradient(
-    from 120deg,
-    rgba(255, 73, 155, 0.25),
-    rgba(55, 214, 255, 0.25),
-    rgba(255, 235, 127, 0.25),
-    rgba(140, 255, 171, 0.25),
-    rgba(255, 73, 155, 0.25)
-  );
-  mix-blend-mode: screen;
-  opacity: 0.55;
-  filter: blur(40px);
-  animation: spinGlow 28s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  inset: -30%;
-  background: conic-gradient(
-    from 90deg,
-    rgba(255, 0, 153, 0.55),
-    rgba(255, 222, 0, 0.55),
-    rgba(0, 255, 178, 0.55),
-    rgba(0, 153, 255, 0.55),
-    rgba(173, 0, 255, 0.55),
-    rgba(255, 0, 153, 0.55)
-  );
-  mix-blend-mode: screen;
-  opacity: 0.55;
-  filter: blur(50px) hue-rotate(0deg);
-  animation: rainbowCycle 10s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
 #kaleido {
   width: 100vw;
   height: 100vh;
@@ -74,14 +33,6 @@ body::after {
   z-index: 1;
   filter: none;
   pointer-events: none;
-}
-
-body.glow-off::before {
-  opacity: 0;
-}
-
-body.glow-off::after {
-  opacity: 0;
 }
 
 .overlay {
@@ -182,8 +133,12 @@ body.glow-off::after {
   color: rgba(28, 31, 34, 0.7);
 }
 
-.quick-styles .toggle-grid {
-  margin-top: 4px;
+.section-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(28, 31, 34, 0.5);
+  margin-top: 2px;
 }
 
 .control-input {
@@ -335,8 +290,7 @@ body.glow-off::after {
 }
 
 body.controls-hidden .control-panel,
-body.controls-hidden .panel-title,
-body.controls-hidden .panel-actions .reset {
+body.controls-hidden .panel-title {
   display: none;
 }
 
@@ -361,6 +315,7 @@ body.controls-hidden .controls-toggle {
 
 .panel-stats {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-top: 6px;
@@ -408,25 +363,6 @@ body.controls-hidden .controls-toggle {
   }
 }
 
-@keyframes spinGlow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes rainbowCycle {
-  from {
-    transform: rotate(0deg);
-    filter: blur(50px) hue-rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-    filter: blur(50px) hue-rotate(360deg);
-  }
-}
 .icon-button {
   padding: 6px 10px;
   min-width: 40px;
