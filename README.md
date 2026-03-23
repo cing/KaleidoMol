@@ -26,6 +26,7 @@ A kaleidoscopic protein structure viewer. Enter any PDB code and watch the molec
 | `b` | Cycle background gradient |
 | `r` | Cycle representation (cartoon / spacefill / surface) |
 | `m` | Toggle mirror |
+| `o` | Toggle reflect |
 | `s` | Toggle auto spin |
 | `p` | Toggle pulse |
 | `d` | Toggle drift |

@@ -163,6 +163,7 @@ const settings = {
   doubleLayer: false,
   trail: false,
   glow: true,
+  reflect: false,
   audioReactive: false,
   hueSpeed: 36,
   illustrative: false,
@@ -534,6 +535,30 @@ const draw = () => {
       }
     }
 
+    if (settings.reflect) {
+      renderCtx.save();
+      const cx = width / 2;
+      const cy = height / 2;
+      const innerR = settings.radius * 0.48;
+      const outerR = settings.radius;
+      renderCtx.beginPath();
+      renderCtx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      renderCtx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
+      renderCtx.clip();
+
+      renderCtx.globalAlpha = 0.85;
+      renderLayer(renderCtx, {
+        slices: dynamicSlices,
+        zoom: dynamicZoom * 1.8,
+        rotation: settings.rotation + Math.PI,
+        offsetX: -currentOffsetX,
+        offsetY: -currentOffsetY,
+        mirror: settings.mirror,
+        patternSource,
+      });
+      renderCtx.restore();
+    }
+
     if (settings.doubleLayer) {
       renderCtx.save();
       renderCtx.globalCompositeOperation = 'screen';
@@ -738,6 +763,7 @@ const controls = {
   audio: document.getElementById('toggle-audio'),
   doubleLayer: document.getElementById('toggle-double'),
   trail: document.getElementById('toggle-trail'),
+  reflect: document.getElementById('toggle-reflect'),
   togglePanel: document.getElementById('controls-toggle'),
   reset: document.getElementById('control-reset'),
   pdbInput: document.getElementById('control-pdb'),
@@ -996,6 +1022,10 @@ const bindControls = () => {
     settings.trail = event.target.checked;
   });
 
+  controls.reflect?.addEventListener('change', (event) => {
+    settings.reflect = event.target.checked;
+  });
+
   let controlsVisible = true;
   const updateControlsVisibility = () => {
     document.body.classList.toggle('controls-hidden', !controlsVisible);
@@ -1024,6 +1054,7 @@ const bindControls = () => {
     settings.backgroundGradient = 'default';
     settings.doubleLayer = false;
     settings.trail = false;
+    settings.reflect = false;
     settings.audioReactive = false;
     settings.illustrative = false;
 
@@ -1047,6 +1078,7 @@ const bindControls = () => {
     controls.audio.checked = false;
     controls.doubleLayer.checked = false;
     controls.trail.checked = false;
+    if (controls.reflect) controls.reflect.checked = false;
     controls.pdbInput.value = '1cbs';
     controls.representationRadios.forEach((radio) => {
       radio.checked = radio.value === 'cartoon';
@@ -1140,6 +1172,7 @@ const bindControls = () => {
       }); break;
       case 'l': toggleCheck(controls.doubleLayer, 'doubleLayer'); break;
       case 't': toggleCheck(controls.trail, 'trail'); break;
+      case 'o': toggleCheck(controls.reflect, 'reflect'); break;
       case 'h':
         controlsVisible = !controlsVisible;
         updateControlsVisibility();
