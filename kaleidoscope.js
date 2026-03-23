@@ -157,7 +157,6 @@ const settings = {
   backgroundGradient: 'default',
   doubleLayer: false,
   trail: false,
-  trailFade: 0.008,
   audioReactive: false,
   hueSpeed: 36,
   illustrative: false,
@@ -193,6 +192,7 @@ const resize = () => {
   renderCanvas.width = width * dpr;
   renderCanvas.height = height * dpr;
   renderCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+
 };
 
 const findSourceCanvas = () => {
@@ -342,6 +342,7 @@ const renderLayer = (targetCtx, options) => {
 
   const sliceAngle = (Math.PI * 2) / slices;
   const halfSlice = sliceAngle / 2;
+  const sliceOverlap = 0.004;
   const sourceSize = Math.min(patternSource.width, patternSource.height);
   const scale = (settings.radius / sourceSize) * zoom;
 
@@ -354,7 +355,7 @@ const renderLayer = (targetCtx, options) => {
 
     targetCtx.beginPath();
     targetCtx.moveTo(0, 0);
-    targetCtx.arc(0, 0, settings.radius, -halfSlice, halfSlice);
+    targetCtx.arc(0, 0, settings.radius, -halfSlice - sliceOverlap, halfSlice + sliceOverlap);
     targetCtx.closePath();
     targetCtx.clip();
 
@@ -399,12 +400,7 @@ const draw = () => {
     }
   }
 
-  if (!settings.trail) {
-    ctx.clearRect(0, 0, width, height);
-  } else {
-    ctx.fillStyle = `rgba(245, 239, 231, ${settings.trailFade})`;
-    ctx.fillRect(0, 0, width, height);
-  }
+  ctx.clearRect(0, 0, width, height);
 
   if (!sourceReady || !sourceCanvas) {
     ctx.save();
@@ -485,6 +481,7 @@ const draw = () => {
 
   if (renderCtx) {
     renderCtx.clearRect(0, 0, width, height);
+
     renderLayer(renderCtx, {
       slices: dynamicSlices,
       zoom: dynamicZoom,
@@ -494,6 +491,26 @@ const draw = () => {
       mirror: settings.mirror,
       patternSource,
     });
+
+    if (settings.trail) {
+      const trailCopies = 3;
+      const rotStep = 0.06;
+      for (let i = 1; i <= trailCopies; i++) {
+        renderCtx.save();
+        renderCtx.globalCompositeOperation = 'screen';
+        renderCtx.globalAlpha = 0.5 / i;
+        renderLayer(renderCtx, {
+          slices: dynamicSlices,
+          zoom: dynamicZoom * (1 + i * 0.04),
+          rotation: settings.rotation - rotStep * i,
+          offsetX: settings.offsetX + audioOffsetX,
+          offsetY: settings.offsetY + audioOffsetY,
+          mirror: settings.mirror,
+          patternSource,
+        });
+        renderCtx.restore();
+      }
+    }
 
     if (settings.doubleLayer) {
       renderCtx.save();
@@ -608,7 +625,7 @@ const draw = () => {
   }
 
   ctx.save();
-  ctx.globalAlpha = settings.trail ? 0.78 : 1;
+  ctx.globalAlpha = 1;
   ctx.filter = `saturate(${saturation}) contrast(${contrast}) hue-rotate(${hue}deg)`;
   ctx.drawImage(renderCanvas, 0, 0, destWidth, destHeight);
 
