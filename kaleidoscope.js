@@ -1004,6 +1004,87 @@ const bindControls = () => {
     lastBgSync = 0;
   });
 
+  const cycleSelect = (select, settingKey, onChange) => {
+    if (!select) return;
+    const options = Array.from(select.options);
+    const idx = options.findIndex((o) => o.value === select.value);
+    select.selectedIndex = (idx + 1) % options.length;
+    settings[settingKey] = select.value;
+    if (onChange) onChange(select.value);
+  };
+
+  const toggleCheck = (checkbox, settingKey, onChange) => {
+    if (!checkbox) return;
+    checkbox.checked = !checkbox.checked;
+    settings[settingKey] = checkbox.checked;
+    if (onChange) onChange(checkbox.checked);
+  };
+
+  const nudgeSlider = (slider, output, settingKey, delta, format) => {
+    if (!slider) return;
+    const min = Number(slider.min);
+    const max = Number(slider.max);
+    const step = Number(slider.step) || 1;
+    const val = Math.min(max, Math.max(min, Number(slider.value) + step * delta));
+    slider.value = String(val);
+    settings[settingKey] = val;
+    syncSlider(slider, output, format);
+  };
+
+  const cycleRepresentation = () => {
+    const radios = Array.from(controls.representationRadios);
+    const idx = radios.findIndex((r) => r.checked);
+    const next = (idx + 1) % radios.length;
+    radios[next].checked = true;
+    viewerState.representation = radios[next].value;
+    sendToViewer({
+      type: 'set-structure',
+      pdb: viewerState.pdb,
+      representation: viewerState.representation,
+    });
+    reloadViewer();
+  };
+
+  window.addEventListener('keydown', (event) => {
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT') return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+    switch (event.key) {
+      case 'f': cycleSelect(controls.foregroundGradient, 'foregroundGradient'); break;
+      case 'b': cycleSelect(controls.backgroundGradient, 'backgroundGradient', () => {
+        lastBgSync = 0;
+        if (['black', 'white', 'default'].includes(settings.backgroundGradient)) {
+          viewerState.background = settings.backgroundGradient;
+          reloadViewer();
+        }
+      }); break;
+      case 'r': cycleRepresentation(); break;
+      case 'm': toggleCheck(controls.mirror, 'mirror'); break;
+      case 's': toggleCheck(controls.spin, 'spin'); break;
+      case 'p': toggleCheck(controls.pulse, 'pulse'); break;
+      case 'd': toggleCheck(controls.drift, 'drift'); break;
+      case 'g': toggleCheck(controls.glow, 'glow', (on) => setBodyClass('glow-off', !on)); break;
+      case 'i': toggleCheck(controls.illustrative, 'illustrative', (on) => {
+        viewerState.illustrative = on;
+        sendToViewer({ type: 'set-illustrative', enabled: on });
+      }); break;
+      case 'l': toggleCheck(controls.doubleLayer, 'doubleLayer'); break;
+      case 't': toggleCheck(controls.trail, 'trail'); break;
+      case 'h':
+        controlsVisible = !controlsVisible;
+        updateControlsVisibility();
+        break;
+      case 'ArrowUp': nudgeSlider(controls.zoom, controls.zoomValue, 'baseZoom', 1, (v) => Number(v).toFixed(2)); break;
+      case 'ArrowDown': nudgeSlider(controls.zoom, controls.zoomValue, 'baseZoom', -1, (v) => Number(v).toFixed(2)); break;
+      case 'ArrowRight': nudgeSlider(controls.speed, controls.speedValue, 'rotationSpeed', 1, (v) => Number(v).toFixed(4)); break;
+      case 'ArrowLeft': nudgeSlider(controls.speed, controls.speedValue, 'rotationSpeed', -1, (v) => Number(v).toFixed(4)); break;
+      case ']': nudgeSlider(controls.slices, controls.slicesValue, 'slices', 1); break;
+      case '[': nudgeSlider(controls.slices, controls.slicesValue, 'slices', -1); break;
+      default: return;
+    }
+    event.preventDefault();
+  });
+
   document.body.dataset.controls = 'ready';
 };
 
