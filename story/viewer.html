@@ -645,6 +645,31 @@
             handleForeground(payload);
         };
 
+        async function handleSsaoQuality(data) {
+            const plugin = await getPlugin();
+            if (!plugin?.canvas3d?.setProps) return;
+            plugin.canvas3d.setProps({
+                postprocessing: {
+                    occlusion: data.ssaoEnabled
+                        ? {
+                            name: 'on',
+                            params: {
+                                multiScale: { name: 'off', params: {} },
+                                radius: 5,
+                                bias: 1,
+                                blurKernelSize: 11,
+                                blurDepthBias: 0.5,
+                                samples: data.ssaoSamples,
+                                resolutionScale: data.ssaoResolutionScale,
+                                color: 0x000000,
+                                transparentThreshold: 0.4,
+                            },
+                        }
+                        : { name: 'off', params: {} },
+                },
+            });
+        }
+
         const handleIllustrative = (enabled) => {
             const next = Boolean(enabled);
             if (next === illustrativeEnabled) return;
@@ -770,6 +795,9 @@
             }
             if (data.type === 'set-illustrative') {
                 handleIllustrative(data.enabled);
+            }
+            if (data.type === 'set-quality') {
+                handleSsaoQuality(data);
             }
         });
     

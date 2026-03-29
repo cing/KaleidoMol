@@ -370,3 +370,27 @@ body.controls-hidden .controls-toggle {
   align-items: center;
   justify-content: center;
 }
+
+.perf-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(28, 31, 34, 0.6);
+  white-space: nowrap;
+}
+
+.perf-select {
+  border-radius: 8px;
+  border: 1px solid rgba(28, 31, 34, 0.2);
+  padding: 4px 6px;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.perf-select:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}

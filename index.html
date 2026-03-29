@@ -224,8 +224,13 @@
             <span aria-hidden="true">📷</span>
           </button>
           <button class="mini-button" type="button" id="control-reset">Reset</button>
-          <span id="stats-fps">FPS --</span>
-          <span id="stats-mem">MEM --</span>
+          <label class="perf-label" for="perf-mode">Quality</label>
+          <select id="perf-mode" class="perf-select">
+            <option value="auto">Auto</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
         </div>
       </div>
     </div>
