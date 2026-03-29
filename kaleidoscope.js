@@ -9,14 +9,24 @@ const bloomCanvas = document.createElement('canvas');
 const bloomCtx = bloomCanvas.getContext('2d');
 
 const trailHistory = [];
-const TRAIL_HISTORY_SIZE = 20;
+let trailHistoryMax = 20;
+let bloomScale = 0.25;
 
-const stats = {
-  fpsEl: document.getElementById('stats-fps'),
-  memEl: document.getElementById('stats-mem'),
-  last: performance.now(),
-  frames: 0,
+const PERFORMANCE_TIERS = {
+  high:   { ssaoEnabled: true,  ssaoSamples: 32, ssaoResolutionScale: 1.0,  bloomScale: 0.25, trailMax: 20 },
+  medium: { ssaoEnabled: true,  ssaoSamples: 16, ssaoResolutionScale: 0.75, bloomScale: 0.15, trailMax: 10 },
+  low:    { ssaoEnabled: false, ssaoSamples: 8,  ssaoResolutionScale: 0.5,  bloomScale: 0.10, trailMax: 5  },
 };
+
+const detectPerformanceTier = () => {
+  const mem = navigator.deviceMemory ?? 4;
+  const cpus = navigator.hardwareConcurrency ?? 4;
+  if (mem >= 8 && cpus >= 8) return 'high';
+  if (mem >= 4 && cpus >= 4) return 'medium';
+  return 'low';
+};
+
+const detectedTier = detectPerformanceTier();
 
 const targetOrigin = '*';
 const pendingMessages = [];
@@ -200,8 +210,8 @@ const resize = () => {
   renderCanvas.height = height * dpr;
   renderCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  bloomCanvas.width = Math.ceil(width * 0.25);
-  bloomCanvas.height = Math.ceil(height * 0.25);
+  bloomCanvas.width = Math.ceil(width * bloomScale);
+  bloomCanvas.height = Math.ceil(height * bloomScale);
 };
 
 const findSourceCanvas = () => {
@@ -393,22 +403,6 @@ const draw = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
 
-  if (stats.fpsEl || stats.memEl) {
-    stats.frames += 1;
-    const now = performance.now();
-    const delta = now - stats.last;
-    if (delta > 500) {
-      const fps = Math.round((stats.frames * 1000) / delta);
-      if (stats.fpsEl) stats.fpsEl.textContent = `FPS ${fps}`;
-      if (stats.memEl) {
-        const heap = performance.memory?.usedJSHeapSize;
-        stats.memEl.textContent = heap ? `MEM ${Math.round(heap / (1024 * 1024))}MB` : 'MEM --';
-      }
-      stats.frames = 0;
-      stats.last = now;
-    }
-  }
-
   ctx.clearRect(0, 0, width, height);
 
   if (!sourceReady || !sourceCanvas) {
@@ -497,7 +491,7 @@ const draw = () => {
     offsetX: currentOffsetX,
     offsetY: currentOffsetY,
   });
-  if (trailHistory.length > TRAIL_HISTORY_SIZE) {
+  if (trailHistory.length > trailHistoryMax) {
     trailHistory.shift();
   }
 
@@ -1091,6 +1085,38 @@ const bindControls = () => {
     settings.reflect = event.target.checked;
   });
 
+  const applyPerformanceTier = (tier) => {
+    const cfg = PERFORMANCE_TIERS[tier];
+    if (!cfg) return;
+    bloomScale = cfg.bloomScale;
+    trailHistoryMax = cfg.trailMax;
+    while (trailHistory.length > trailHistoryMax) trailHistory.shift();
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    bloomCanvas.width = Math.ceil(w * bloomScale);
+    bloomCanvas.height = Math.ceil(h * bloomScale);
+    sendToViewer({
+      type: 'set-quality',
+      ssaoEnabled: cfg.ssaoEnabled,
+      ssaoSamples: cfg.ssaoSamples,
+      ssaoResolutionScale: cfg.ssaoResolutionScale,
+    });
+  };
+
+  const perfModeSelect = document.getElementById('perf-mode');
+  if (perfModeSelect) {
+    const autoOpt = perfModeSelect.querySelector('option[value="auto"]');
+    if (autoOpt) {
+      const tierLabel = detectedTier.charAt(0).toUpperCase() + detectedTier.slice(1);
+      autoOpt.textContent = `Auto (${tierLabel})`;
+    }
+    perfModeSelect.addEventListener('change', (event) => {
+      const selected = event.target.value;
+      applyPerformanceTier(selected === 'auto' ? detectedTier : selected);
+    });
+    applyPerformanceTier(detectedTier);
+  }
+
   let controlsVisible = true;
   const updateControlsVisibility = () => {
     document.body.classList.toggle('controls-hidden', !controlsVisible);
@@ -1144,6 +1170,10 @@ const bindControls = () => {
     controls.doubleLayer.checked = false;
     controls.trail.checked = false;
     if (controls.reflect) controls.reflect.checked = false;
+    if (perfModeSelect) {
+      perfModeSelect.value = 'auto';
+      applyPerformanceTier(detectedTier);
+    }
     controls.pdbInput.value = '1cbs';
     controls.representationRadios.forEach((radio) => {
       radio.checked = radio.value === 'cartoon';
