@@ -536,26 +536,91 @@ const draw = () => {
     }
 
     if (settings.reflect) {
-      renderCtx.save();
       const cx = width / 2;
       const cy = height / 2;
-      const innerR = settings.radius * 0.48;
-      const outerR = settings.radius;
-      renderCtx.beginPath();
-      renderCtx.arc(cx, cy, outerR, 0, Math.PI * 2);
-      renderCtx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
-      renderCtx.clip();
 
-      renderCtx.globalAlpha = 0.85;
-      renderLayer(renderCtx, {
-        slices: dynamicSlices,
-        zoom: dynamicZoom * 1.8,
-        rotation: settings.rotation + Math.PI,
-        offsetX: -currentOffsetX,
-        offsetY: -currentOffsetY,
-        mirror: settings.mirror,
-        patternSource,
-      });
+      // Number of angular facets per ring — creates the cut-diamond look
+      const FACETS = 12;
+      const facetAngle = (Math.PI * 2) / FACETS;
+
+      // Three concentric rings, each with different zoom / rotation / opacity.
+      // Adjacent facets within a ring alternate between two rendering passes
+      // (even vs. odd parity) so neighbouring facets mirror each other, just
+      // like facets on a cut diamond or the triangular mirrors inside a real
+      // kaleidoscope tube.
+      const rings = [
+        { inner: 0.47, outer: 0.63, zoom: 2.4,  rotOff: Math.PI,        alpha: 0.90 },
+        { inner: 0.63, outer: 0.79, zoom: 1.70, rotOff: Math.PI * 0.5,  alpha: 0.75 },
+        { inner: 0.79, outer: 1.00, zoom: 1.30, rotOff: Math.PI * 1.5,  alpha: 0.60 },
+      ];
+
+      for (const ring of rings) {
+        const innerR = settings.radius * ring.inner;
+        const outerR = settings.radius * ring.outer;
+
+        // Two passes: even-indexed facets (parity 0) and odd-indexed (parity 1).
+        // The two passes use inverted offsets / mirror states so neighbouring
+        // facets show a reflected image of each other.
+        for (let parity = 0; parity < 2; parity++) {
+          renderCtx.save();
+
+          // Build a single compound clip path covering all facets of this parity.
+          renderCtx.beginPath();
+          for (let f = parity; f < FACETS; f += 2) {
+            const a0 = facetAngle * f;
+            const a1 = facetAngle * (f + 1);
+            renderCtx.moveTo(cx + innerR * Math.cos(a0), cy + innerR * Math.sin(a0));
+            renderCtx.arc(cx, cy, outerR, a0, a1);
+            renderCtx.arc(cx, cy, innerR, a1, a0, true);
+            renderCtx.closePath();
+          }
+          renderCtx.clip();
+
+          // Even facets: inverted offsets + flipped mirror → acts as a reflection
+          // Odd  facets: straight offsets + normal mirror → acts as the source
+          const isEven = parity === 0;
+          renderCtx.globalAlpha = ring.alpha;
+          renderLayer(renderCtx, {
+            slices: dynamicSlices,
+            zoom: dynamicZoom * ring.zoom,
+            rotation: settings.rotation + ring.rotOff + (isEven ? 0 : Math.PI / dynamicSlices),
+            offsetX: isEven ? -currentOffsetX : currentOffsetX,
+            offsetY: isEven ? -currentOffsetY : currentOffsetY,
+            mirror: isEven ? !settings.mirror : settings.mirror,
+            patternSource,
+          });
+
+          renderCtx.restore();
+        }
+      }
+
+      // Draw subtle diamond-cut edge lines: ring-boundary arcs and radial cuts.
+      renderCtx.save();
+      renderCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      renderCtx.lineWidth = 0.8;
+
+      // Ring boundary arcs
+      for (const ratio of [0.47, 0.63, 0.79]) {
+        renderCtx.beginPath();
+        renderCtx.arc(cx, cy, settings.radius * ratio, 0, Math.PI * 2);
+        renderCtx.stroke();
+      }
+
+      // Radial facet-edge lines
+      for (let f = 0; f < FACETS; f++) {
+        const angle = facetAngle * f;
+        renderCtx.beginPath();
+        renderCtx.moveTo(
+          cx + settings.radius * 0.47 * Math.cos(angle),
+          cy + settings.radius * 0.47 * Math.sin(angle)
+        );
+        renderCtx.lineTo(
+          cx + settings.radius * Math.cos(angle),
+          cy + settings.radius * Math.sin(angle)
+        );
+        renderCtx.stroke();
+      }
+
       renderCtx.restore();
     }
 
